@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Neo Builder — AI-Powered Live Code Playground</title>
 
+  <script>
+    window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+  </script>
+  <script defer src="/_vercel/insights/script.js"></script>
+
 <!-- Font Awesome with cache busting -->
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css?v=1.0" rel="stylesheet">
 
@@ -32,14 +37,178 @@ body{
   left: 0;
   width: 100%;
   height: 100%;
-  background: var(--bg);
+  background: linear-gradient(135deg, #0f1720 0%, #071019 100%);
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
   z-index: 9999;
   transition: opacity 0.5s ease;
+  font-family: Inter, "Segoe UI", Tahoma, system-ui;
 }
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+  max-width: 500px;
+  text-align: center;
+}
+
+/* Neo loader animation */
+.neo-loader {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
+
+.loader-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  animation: rotate 2s linear infinite;
+}
+
+.loader-ring:nth-child(1) {
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-top: 2px solid rgba(34, 197, 94, 0.8);
+  animation-delay: -0.5s;
+}
+
+.loader-ring:nth-child(2) {
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  border-right: 2px solid rgba(34, 197, 94, 0.6);
+  animation-delay: -1s;
+}
+
+.loader-ring:nth-child(3) {
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  bottom: 20px;
+  border-bottom: 2px solid rgba(34, 197, 94, 0.4);
+  animation-delay: -1.5s;
+}
+
+.loader-ring:nth-child(4) {
+  top: 30px;
+  left: 30px;
+  right: 30px;
+  bottom: 30px;
+  border-left: 2px solid rgba(34, 197, 94, 0.2);
+  animation-delay: -2s;
+}
+
+.loader-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.1));
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+}
+
+.loader-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+}
+
+@keyframes rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Loading content */
+.loading-content {
+  color: #e6eef6;
+}
+
+.loading-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.loading-subtitle {
+  font-size: 16px;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+
+/* Progress bar */
+.loading-progress {
+  width: 100%;
+  margin-bottom: 25px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+  border-radius: 10px;
+  transition: width 0.3s ease;
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+}
+
+.progress-text {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Tips slider */
+.loading-tips {
+  width: 100%;
+  height: 40px;
+  overflow: hidden;
+  position: relative;
+}
+
+.tip-slider {
+  position: absolute;
+  width: 100%;
+  animation: slideTips 9s steps(3) infinite; /* steps = number of tips */
+}
+
+.tip {
+  font-size: 13px;
+  color: var(--muted);
+  padding: 8px 0;
+  font-style: italic;
+}
+
+@keyframes slideTips {
+  0% { transform: translateY(0); }
+  33% { transform: translateY(-100%); }
+  66% { transform: translateY(-200%); }
+  100% { transform: translateY(0); }
+}
+
 .loading-logo {
   width: 80px;
   height: 80px;
@@ -682,6 +851,140 @@ iframe#iframePreview{width:100%;height:100%;border:0; display:block; border-radi
   border-radius: 8px;
 }
 
+/* Add these styles to your existing CSS */
+#inboxBtn {
+  position: relative;
+}
+
+.inbox-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 8px;
+  height: 8px;
+  background: #ef4444;
+  border-radius: 50%;
+  border: 2px solid var(--panel);
+}
+
+.inbox-panel {
+  position: fixed;
+  top: 0;
+  right: -400px;
+  width: 380px;
+  height: 100vh;
+  background: var(--panel);
+  border-left: 1px solid rgba(255,255,255,0.1);
+  z-index: 9999;
+  transition: right 0.3s ease;
+  box-shadow: -5px 0 30px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+}
+
+.inbox-panel.open {
+  right: 0;
+}
+
+.inbox-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.03);
+}
+
+.inbox-header h3 {
+  color: var(--accent);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.inbox-close {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 5px;
+  border-radius: 5px;
+}
+
+.inbox-close:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+.inbox-content {
+  flex: 1;
+  overflow: auto;
+}
+
+.inbox-list {
+  padding: 15px;
+}
+
+.inbox-item {
+  padding: 15px;
+  margin-bottom: 10px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 8px;
+  border-left: 3px solid var(--accent);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.inbox-item.unread {
+  background: rgba(34,197,94,0.08);
+  border-left: 3px solid var(--accent);
+}
+
+.inbox-item:hover {
+  background: rgba(255,255,255,0.05);
+  transform: translateX(2px);
+}
+
+.inbox-title {
+  font-weight: 600;
+  color: #e8f1fb;
+  margin-bottom: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.inbox-desc {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.inbox-time {
+  font-size: 11px;
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.inbox-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted);
+}
+
+.inbox-empty i {
+  font-size: 36px;
+  margin-bottom: 15px;
+  opacity: 0.5;
+}
+
+.inbox-empty p {
+  margin: 0;
+  font-size: 14px;
+}
+
 /* Messages */
 .ai-message {
   max-width: 80%;
@@ -804,6 +1107,40 @@ iframe#iframePreview{width:100%;height:100%;border:0; display:block; border-radi
   to { opacity: 1; transform: translateY(0); }
 }
 
+
+.api-success-body {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.api-success-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 20px;
+  background: linear-gradient(135deg, rgba(34,197,94,0.2), rgba(34,197,94,0.1));
+  border: 2px solid rgba(34,197,94,0.3);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.api-success-icon i {
+  font-size: 36px;
+  color: var(--accent);
+}
+
+.api-success-body p {
+  margin: 10px 0;
+  color: var(--muted);
+}
+
+#apiSuccessModal .share-content {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255,255,255,0.15);
+}
 
 /* Mobile Menu Button */
 .mobile-menu-btn {
@@ -1084,21 +1421,27 @@ iframe#iframePreview{width:100%;height:100%;border:0; display:block; border-radi
 }
 .share-content {
   background: var(--panel);
-  border-radius: 12px;
-  padding: 20px;
-  width: 400px;
- max-width: 90%;
+  border-radius: 16px;
+  padding: 25px;
+  width: 420px;
+  max-width: 90%;
   border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
 }
+
 .share-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
 }
+
 .share-header h3 {
   color: var(--accent);
-  font-size: 16px;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 .share-close {
   background: none;
@@ -1121,21 +1464,28 @@ iframe#iframePreview{width:100%;height:100%;border:0; display:block; border-radi
 }
 .share-buttons {
   display: flex;
-  gap: 10px;
-  margin-top: 15px;
+  gap: 12px;
+  margin-top: 20px;
 }
+
 .share-btn {
   flex: 1;
-  padding: 8px 12px;
-  border-radius: 6px;
+  padding: 12px 20px;
+  border-radius: 10px;
   border: none;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 14px;
+  font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  transition: 0.2s;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.share-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(34,197,94,0.3);
 }
 .share-btn.copy {
   background: var(--accent);
@@ -1175,6 +1525,46 @@ iframe#iframePreview{width:100%;height:100%;border:0; display:block; border-radi
   transform: scale(0.96);
   background: rgba(239, 68, 68, 0.35);
   box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
+}
+
+.api-key-body {
+  text-align: center;
+  padding: 10px 0;
+}
+
+.api-key-icon {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 15px;
+  background: linear-gradient(135deg, rgba(34,197,94,0.2), rgba(34,197,94,0.1));
+  border: 2px solid rgba(34,197,94,0.3);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.api-key-icon i {
+  font-size: 24px;
+  color: var(--accent);
+}
+
+.api-key-input-group {
+  margin: 20px 0;
+}
+
+.api-key-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 8px;
+  justify-content: center;
+}
+
+.api-key-hint i {
+  color: var(--accent);
 }
 
 
@@ -1376,6 +1766,37 @@ iframe#iframePreview{width:100%;height:100%;border:0; display:block; border-radi
     font-size: 12px;
     padding: 10px 12px;
   }
+  .loading-container {
+    padding: 0 20px;
+    gap: 20px;
+  }
+  
+  .neo-loader {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .loader-center {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .loader-logo {
+    width: 30px;
+    height: 30px;
+  }
+  
+  .loading-title {
+    font-size: 24px;
+  }
+  
+  .loading-subtitle {
+    font-size: 14px;
+  }
+  
+  .tip {
+    font-size: 12px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -1403,7 +1824,24 @@ iframe#iframePreview{width:100%;height:100%;border:0; display:block; border-radi
   .model-option i {
     font-size: 16px;
   }
-  
+
+    .inbox-panel {
+        width: 85%;
+        right: -85%;
+    }
+    
+    .inbox-header {
+        padding: 15px;
+    }
+    
+    .inbox-list {
+        padding: 10px;
+    }
+    
+    .inbox-item {
+        padding: 12px;
+    }
+
   /* Overlay background for mobile */
   .ai-model-selector.show {
     display: flex;
@@ -1421,6 +1859,33 @@ iframe#iframePreview{width:100%;height:100%;border:0; display:block; border-radi
     background: rgba(0,0,0,0.7);
     z-index: -1;
   }
+}
+
+@media (max-width: 480px) {
+    .inbox-panel {
+        width: 95%;
+        right: -95%;
+    }
+    
+    .inbox-header h3 {
+        font-size: 16px;
+    }
+    
+    .inbox-item {
+        padding: 10px;
+    }
+    
+    .inbox-title {
+        font-size: 14px;
+    }
+    
+    .inbox-desc {
+        font-size: 12px;
+    }
+    
+    .inbox-time {
+        font-size: 10px;
+    }
 }
 
 @media (max-width: 390px) {
@@ -1778,6 +2243,25 @@ iframe#iframePreview{width:100%;height:100%;border:0; display:block; border-radi
   }
 }
 
+@media (max-width: 500px) {
+  .inbox-panel {
+    width: 85%;
+    right: -85%;
+  }
+  
+  .inbox-header {
+    padding: 15px;
+  }
+  
+  .inbox-list {
+    padding: 10px;
+  }
+  
+  .inbox-item {
+    padding: 12px;
+  }
+}
+
 @media (max-height: 600px) and (orientation: landscape) {
   .layout {
     height: auto;
@@ -1802,14 +2286,37 @@ iframe#iframePreview{width:100%;height:100%;border:0; display:block; border-radi
 </style>
 </head>
 <body>
-  <!-- Loading Screen -->
-  <div id="loadingScreen">
-    <div class="loading-logo">
-      <img src="icon.png" alt="Neo Builder" />
+<!-- Loading Screen - Modernized -->
+<div id="loadingScreen">
+  <div class="loading-container">
+    <div class="neo-loader">
+      <div class="loader-ring"></div>
+      <div class="loader-ring"></div>
+      <div class="loader-ring"></div>
+      <div class="loader-ring"></div>
+      <div class="loader-center">
+        <img src="icon1.png" alt="Neo Builder" class="loader-logo" />
+      </div>
     </div>
-    <div class="loading-text">Loading Neo Builder...</div>
-    <div class="loading-spinner"></div>
+    <div class="loading-content">
+      <h2 class="loading-title">Neo Builder</h2>
+      <p class="loading-subtitle">Initializing your coding environment...</p>
+      <div class="loading-progress">
+        <div class="progress-bar">
+          <div class="progress-fill"></div>
+        </div>
+        <div class="progress-text">0%</div>
+      </div>
+      <div class="loading-tips">
+        <div class="tip-slider">
+          <div class="tip">Tip: Use Ctrl+Enter to quickly toggle between code and preview</div>
+          <div class="tip">Tip: Drag and drop files directly into the workspace</div>
+          <div class="tip">Tip: Right-click files in the sidebar for more options</div>
+        </div>
+      </div>
+    </div>
   </div>
+</div>
 
   <div class="topbar">
 <div class="brand">
@@ -1822,13 +2329,16 @@ iframe#iframePreview{width:100%;height:100%;border:0; display:block; border-radi
       </div>
     </div>
     <div style="display:flex;gap:10px;align-items:center">
-      <button id="createFileBtn" class="btn secondary"><i class="fa-solid fa-file-circle-plus"></i> Create File</button>
       <button id="importFileBtn" class="btn secondary"><i class="fa-solid fa-file-import"></i> Import</button>
       <button id="togglePreviewBtn" class="btn primary"><i class="fa-solid fa-eye"></i> Preview</button>
       <button class="btn secondary" id="exportZipBtn"><i class="fa-solid fa-file-archive"></i> Export ZIP</button>
       <button class="btn secondary" id="askAiBtn"><i class="fa-solid fa-robot"></i> Ask AI</button>
       <button class="btn secondary" id="shareProjectBtn"><i class="fa-solid fa-share"></i> Share</button>
       <button class="btn secondary voice-command-btn" id="voiceCommandBtn"><i class="fa-solid fa-microphone"></i> Voice</button>
+      <button class="btn secondary" id="inboxBtn">
+        <i class="fa-solid fa-inbox"></i>
+        <span class="inbox-badge" id="inboxBadge" style="display:none"></span>
+      </button>
       <div class="credit-counter" id="creditCounter">
         <i class="fa-solid fa-coins"></i>
         <span id="credits">10</span>/10
@@ -1840,15 +2350,15 @@ iframe#iframePreview{width:100%;height:100%;border:0; display:block; border-radi
   </div>
 
   <!-- Mobile menu moved outside topbar -->
-  <div class="mobile-menu-dropdown" id="mobileMenuDropdown">
-    <button id="mobileCreateFileBtn" class="btn secondary"><i class="fa-solid fa-file-circle-plus"></i> Create File</button>
-    <button id="mobileImportFileBtn" class="btn secondary"><i class="fa-solid fa-file-import"></i> Import</button>
-    <button id="mobileTogglePreviewBtn" class="btn primary"><i class="fa-solid fa-eye"></i> Preview</button>
-    <button class="btn secondary" id="mobileExportZipBtn"><i class="fa-solid fa-file-archive"></i> Export ZIP</button>
-    <button class="btn secondary" id="mobileAskAiBtn"><i class="fa-solid fa-robot"></i> Ask AI</button>
-    <button class="btn secondary" id="mobileShareProjectBtn"><i class="fa-solid fa-share"></i> Share</button>
-    <button class="btn secondary voice-command-btn" id="mobileVoiceCommandBtn"><i class="fa-solid fa-microphone"></i> Voice</button>
-  </div>
+<div class="mobile-menu-dropdown" id="mobileMenuDropdown">
+  <button id="mobileImportFileBtn" class="btn secondary"><i class="fa-solid fa-file-import"></i> Import</button>
+  <button id="mobileTogglePreviewBtn" class="btn primary"><i class="fa-solid fa-eye"></i> Preview</button>
+  <button class="btn secondary" id="mobileExportZipBtn"><i class="fa-solid fa-file-archive"></i> Export ZIP</button>
+  <button class="btn secondary" id="mobileAskAiBtn"><i class="fa-solid fa-robot"></i> Ask AI</button>
+  <button class="btn secondary" id="mobileShareProjectBtn"><i class="fa-solid fa-share"></i> Share</button>
+  <button class="btn secondary voice-command-btn" id="mobileVoiceCommandBtn"><i class="fa-solid fa-microphone"></i> Voice</button>
+</div>
+
 
 <button id="fullscreenPreviewBtn" class="btn secondary"><i class="fa-solid fa-expand"></i> Full Screen</button>
 <button class="toggle-sidebar-btn" id="toggleSidebarBtn">
@@ -1862,11 +2372,13 @@ iframe#iframePreview{width:100%;height:100%;border:0; display:block; border-radi
     <div class="file-manager-header">
       <h3>Files</h3>
       <div class="file-manager-actions">
+        <button id="createFileBtn" title="Create new file"><i class="fa-solid fa-file-circle-plus"></i></button>
         <button id="sortFilesBtn" title="Sort files"><i class="fa-solid fa-sort"></i></button>
         <button id="collapseFilesBtn" title="Collapse all"><i class="fa-solid fa-minimize"></i></button>
       </div>
     </div>
     
+
     <div class="file-search">
       <i class="fa-solid fa-search"></i>
       <input type="text" id="fileSearchInput" placeholder="Search files...">
@@ -1929,6 +2441,23 @@ iframe#iframePreview{width:100%;height:100%;border:0; display:block; border-radi
   <div id="duplicateFile"><i class="fa-solid fa-copy"></i> Duplicate</div>
 </div>
 
+<div class="share-modal" id="apiSuccessModal">
+  <div class="share-content">
+    <div class="share-header">
+      <h3><i class="fa-solid fa-check-circle"></i> Success!</h3>
+    </div>
+    <div class="api-success-body">
+      <div class="api-success-icon">
+        <i class="fa-solid fa-check"></i>
+      </div>
+      <p>Your API key has been successfully saved!</p>
+      <p>You can now use the AI Assistant with full functionality.</p>
+    </div>
+    <div class="share-buttons">
+      <button class="share-btn close" id="apiSuccessCloseBtn">Continue</button>
+    </div>
+  </div>
+</div>
 
 
 <!-- AI Assistant Panel - Redesigned -->
@@ -1977,14 +2506,31 @@ iframe#iframePreview{width:100%;height:100%;border:0; display:block; border-radi
 <div class="share-modal" id="apiKeyModal">
   <div class="share-content">
     <div class="share-header">
-      <h3>OpenRouter API Key Required</h3>
+      <h3><i class="fa-solid fa-key"></i> API Key Required</h3>
       <button class="share-close" id="apiKeyCloseBtn"><i class="fa-solid fa-xmark"></i></button>
     </div>
-    <p>To use the AI Assistant, please enter your OpenRouter API key:</p>
-    <input type="password" id="openRouterApiKey" placeholder="Enter your OpenRouter API key" style="width:100%; padding:10px; margin:10px 0; background:#02060a; border:1px solid rgba(255,255,255,0.1); border-radius:6px; color:#fff;">
+    <div class="api-key-body">
+      <div class="api-key-icon">
+        <i class="fa-solid fa-robot"></i>
+      </div>
+      <p>To unlock the full power of AI Assistant, please enter your OpenRouter API key:</p>
+      
+      <div class="api-key-input-group">
+        <input type="password" id="openRouterApiKey" placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" 
+               style="width:100%; padding:12px 16px; margin:15px 0; background:#0f1720; border:1px solid rgba(34,197,94,0.3); border-radius:10px; color:#fff; font-family:monospace;">
+        <div class="api-key-hint">
+          <i class="fa-solid fa-info-circle"></i>
+          <span>Get your free API key from <a href="https://openrouter.ai" target="_blank" style="color:var(--accent);">openrouter.ai</a></span>
+        </div>
+      </div>
+    </div>
     <div class="share-buttons">
-      <button class="share-btn copy" id="saveApiKeyBtn"><i class="fa-solid fa-save"></i> Save Key</button>
-      <button class="share-btn close" id="cancelApiKeyBtn">Cancel</button>
+      <button class="share-btn copy" id="saveApiKeyBtn" style="background:linear-gradient(135deg,#22c55e,#16a34a);">
+        <i class="fa-solid fa-key"></i> Save & Continue
+      </button>
+      <button class="share-btn close" id="cancelApiKeyBtn" style="background:rgba(255,255,255,0.1);">
+        Cancel
+      </button>
     </div>
   </div>
 </div>
@@ -2005,6 +2551,22 @@ iframe#iframePreview{width:100%;height:100%;border:0; display:block; border-radi
   </div>
 </div>
 
+<div id="inboxPanel" class="inbox-panel">
+  <div class="inbox-header">
+    <h3><i class="fa-solid fa-inbox"></i> Notifications</h3>
+    <button id="closeInbox" class="inbox-close"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="inbox-content">
+    <div class="inbox-list" id="inboxList">
+      <!-- Notifications will be added here dynamically -->
+      <div class="inbox-empty">
+        <i class="fa-solid fa-bell-slash"></i>
+        <p>No notifications yet</p>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Performance Meter -->
 <div class="performance-meter" id="performanceMeter">
   <i class="fa-solid fa-gauge-high"></i>
@@ -2014,17 +2576,7 @@ iframe#iframePreview{width:100%;height:100%;border:0; display:block; border-radi
 <input type="file" id="fileImportInput" accept=".html,.css,.js,.png,.jpg,.jpeg,.gif,.svg,.webp,.bmp,.ico,.tiff" style="display:none">
 
 <script>
-// ---------------- Loading Screen Logic ----------------
-const loadingScreen = document.getElementById('loadingScreen');
 
-window.addEventListener('load', () => {
-  setTimeout(() => {
-    loadingScreen.style.opacity = '0';
-    setTimeout(() => {
-      loadingScreen.style.display = 'none';
-    }, 500);
-  }, 1500);
-});
 
 // ---------------- Core Editor Logic ----------------
 let files = [];
@@ -2054,6 +2606,13 @@ const shareCloseBtn = document.getElementById('shareCloseBtn');
 const performanceMeter = document.getElementById('performanceMeter');
 const loadTime = document.getElementById('loadTime');
 const dragDropOverlay = document.getElementById('dragDropOverlay');
+
+const inboxBtn = document.getElementById('inboxBtn');
+const inboxBadge = document.getElementById('inboxBadge');
+const inboxPanel = document.getElementById('inboxPanel');
+const closeInbox = document.getElementById('closeInbox');
+const inboxList = document.getElementById('inboxList');
+
 
 // Voice command elements
 const voiceCommandBtn = document.getElementById('voiceCommandBtn');
@@ -2113,6 +2672,19 @@ function showNotification(message, type = 'info') {
       notification.remove();
     }, 300);
   }, 3000);
+}
+
+// function to save notifications to localStorage
+function saveNotificationsToStorage() {
+  localStorage.setItem('neoBuilderNotifications', JSON.stringify(notifications));
+}
+
+// function to load notifications from localStorage
+function loadNotificationsFromStorage() {
+  const savedNotifications = localStorage.getItem('neoBuilderNotifications');
+  if (savedNotifications) {
+    notifications = JSON.parse(savedNotifications);
+  }
 }
 
 // Auto-save function
@@ -2243,6 +2815,7 @@ mobileVoiceCommandBtn.addEventListener('click', () => {
   mobileMenuDropdown.classList.remove('show');
 });
 
+
 // Drag and drop functionality
 document.addEventListener('dragover', (e) => {
   e.preventDefault();
@@ -2363,7 +2936,7 @@ function checkApiKey() {
     setTimeout(() => {
       apiKeyModal.classList.add('active');
       document.body.style.overflow = 'hidden';
-    }, 2000);
+    }, 4000);
   }
   return savedApiKey;
 }
@@ -2375,10 +2948,21 @@ saveApiKeyBtn.addEventListener('click', () => {
     localStorage.setItem('openRouterApiKey', apiKey);
     apiKeyModal.classList.remove('active');
     document.body.style.overflow = '';
+    
+    // Show success modal
+    setTimeout(() => {
+      apiSuccessModal.classList.add('active');
+    }, 300);
+    
     showNotification('API key saved successfully!', 'success');
   } else {
     showNotification('Please enter a valid API key', 'error');
   }
+});
+
+// Add event listener for success modal close
+document.getElementById('apiSuccessCloseBtn').addEventListener('click', () => {
+  apiSuccessModal.classList.remove('active');
 });
 
 // Close modal handlers
@@ -2460,10 +3044,6 @@ toggleSidebarBtn.addEventListener('click', () => {
 });
 
 // Mobile Button Handlers
-document.getElementById('mobileCreateFileBtn').addEventListener('click', () => {
-  document.getElementById('createFileBtn').click();
-  mobileMenuDropdown.classList.remove('show');
-});
 document.getElementById('mobileImportFileBtn').addEventListener('click', () => {
   document.getElementById('importFileBtn').click();
   mobileMenuDropdown.classList.remove('show');
@@ -2677,10 +3257,21 @@ const creditCounter = document.getElementById('creditCounter');
 
 function updateCreditsDisplay() {
   creditsEl.textContent = credits.toFixed(1);
+  const mobileCredits = document.getElementById('mobileCredits');
+  if (mobileCredits) {
+    mobileCredits.textContent = credits.toFixed(1);
+  }
+  
   if (credits === 10) {
     creditCounter.style.opacity = '0.6';
+    if (mobileCredits) {
+      mobileCredits.parentElement.style.opacity = '0.6';
+    }
   } else {
     creditCounter.style.opacity = '1';
+    if (mobileCredits) {
+      mobileCredits.parentElement.style.opacity = '1';
+    }
   }
 }
 
@@ -2745,52 +3336,6 @@ function loadFilesFromStorage() {
 
 // Render files
 function renderFiles(){
-  sidebarEl.querySelectorAll('.fileItem').forEach(el=>el.remove());
-  files.forEach((f,idx)=>{
-    const div = document.createElement('div');
-    div.className='templateItem fileItem';
-    
-    if (f.type === 'image') {
-      div.innerHTML=`<i class="fa-solid fa-image"></i><div class="tname">${f.name}.${f.extension}</div><i class="fa-solid fa-trash" style="margin-left:auto;cursor:pointer"></i>`;
-      div.querySelector('.tname').addEventListener('click', ()=>{ 
-        // Show image in preview when clicked
-        previewPanel.classList.remove('hidden');
-        editorPanel.classList.add('hidden');
-        toggleBtn.innerHTML='<i class="fa-solid fa-code"></i> Code';
-        
-        const imgHtml = `<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#f8f9fa;"><img src="${f.code}" style="max-width:100%;max-height:100%;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);"></div>`;
-        iframe.srcdoc = imgHtml;
-        
-        showNotification(`Viewing image "${f.name}.${f.extension}"`, 'info');
-      });
-    } else {
-      div.innerHTML=`<i class="fa-solid fa-file-code"></i><div class="tname">${f.name}.${f.type}</div><i class="fa-solid fa-trash" style="margin-left:auto;cursor:pointer"></i>`;
-      div.querySelector('.tname').addEventListener('click', ()=>{ 
-        currentFile=idx; 
-        editor.value=f.code; 
-        emptyState.style.display='none'; 
-        editor.style.display='block'; 
-        controls.style.display='flex'; 
-        showNotification(`Switched to "${f.name}.${f.type}"`, 'info');
-      });
-    }
-    
-    div.querySelector('.fa-trash').addEventListener('click', e=>{ 
-      e.stopPropagation(); 
-      if(confirm('Delete this file?')){ 
-        files.splice(idx,1); 
-        saveFilesToStorage();
-        renderFiles(); 
-        if(currentFile===idx){editor.value='';currentFile=null; editor.style.display='none'; controls.style.display='none'; emptyState.style.display='flex';}
-        showNotification('File deleted', 'info');
-      }
-    });
-    sidebarEl.appendChild(div);
-  });
-}
-
-// Render files with modern interface
-function renderFiles(){
   const fileList = document.getElementById('fileList');
   fileList.innerHTML = '';
   
@@ -2826,9 +3371,25 @@ function renderFiles(){
       </div>
     `;
     
-    // File click handler
+    // File click handler - UPDATED FOR IMAGE PREVIEW
     fileItem.querySelector('.file-info').addEventListener('click', ()=>{ 
-      selectFile(idx);
+      if (f.type === 'image') {
+        // Show image in preview when clicked
+        previewPanel.classList.remove('hidden');
+        editorPanel.classList.add('hidden');
+        toggleBtn.innerHTML='<i class="fa-solid fa-code"></i> Code';
+        
+        const imgHtml = `
+          <div style="display:flex;justify-content:center;align-items:center;height:100%;background:#f8f9fa;">
+            <img src="${f.code}" style="max-width:100%;max-height:100%;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+          </div>
+        `;
+        iframe.srcdoc = imgHtml;
+        
+        showNotification(`Viewing image "${f.name}.${f.extension}"`, 'info');
+      } else {
+        selectFile(idx);
+      }
     });
     
     // Rename handler
@@ -2847,6 +3408,24 @@ function renderFiles(){
   });
 }
 
+function formatNotificationTime(timestamp) {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffInHours = (now - date) / (1000 * 60 * 60);
+  
+  if (diffInHours < 24) {
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } else {
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  }
+}
 
 // Helper functions for file management
 function getFileIcon(type) {
@@ -3809,6 +4388,9 @@ document.addEventListener('DOMContentLoaded', function() {
     aiPanel.style.display = 'none';
   }
   setupModelSelector();
+  loadNotificationsFromStorage();
+  loadNotifications();
+  updateInboxBadge();
 // Enhanced responsive behavior
 function handleResponsiveDesign() {
   const isMobile = window.innerWidth <= 900;
@@ -3836,7 +4418,187 @@ function handleResponsiveDesign() {
   
   // Listen for resize events
   window.addEventListener('resize', handleResponsiveDesign);
+
 });
+
+// Enhanced loading animation with progress simulation
+document.addEventListener('DOMContentLoaded', function() {
+  const loadingScreen = document.getElementById('loadingScreen');
+  const progressFill = document.querySelector('.progress-fill');
+  const progressText = document.querySelector('.progress-text');
+  
+  if (!loadingScreen || !progressFill || !progressText) return;
+  
+  let progress = 0;
+  const interval = setInterval(() => {
+    progress += Math.random() * 5;
+    if (progress >= 100) {
+      progress = 100;
+      clearInterval(interval);
+      
+      // Complete loading after a short delay
+      setTimeout(() => {
+        loadingScreen.style.opacity = '0';
+        setTimeout(() => {
+          loadingScreen.style.display = 'none';
+        }, 500);
+      }, 500);
+    }
+    
+    progressFill.style.width = `${progress}%`;
+    progressText.textContent = `${Math.round(progress)}%`;
+  }, 150);
+});
+
+// Sample notifications data (in real app, this would come from an API)
+const notifications = [
+  {
+    id: 1,
+    title: 'Welcome to Neo Builder!',
+    description: 'Get started by creating your first HTML file.',
+    time: '2 hours ago',
+    unread: true
+  },
+  {
+    id: 2,
+    title: 'New Feature: AI Assistant',
+    description: 'Try our new AI-powered code suggestions and assistance.',
+    time: '1 day ago',
+    unread: true
+  },
+  {
+    id: 3,
+    title: 'Project Saved',
+    description: 'Your project has been automatically saved.',
+    time: '2 days ago',
+    unread: false
+  }
+];
+
+// Toggle inbox panel
+inboxBtn.addEventListener('click', () => {
+  inboxPanel.classList.toggle('open');
+  updateInboxBadge();
+});
+
+// Close inbox panel
+closeInbox.addEventListener('click', () => {
+  inboxPanel.classList.remove('open');
+});
+
+// Close panel when clicking outside
+document.addEventListener('click', (e) => {
+  if (inboxPanel.classList.contains('open') && 
+      !inboxPanel.contains(e.target) && 
+      !inboxBtn.contains(e.target)) {
+    inboxPanel.classList.remove('open');
+  }
+});
+
+// Load notifications
+function loadNotifications() {
+  const readNotifications = JSON.parse(localStorage.getItem('readNotifications') || '[]');
+  
+  if (notifications.length === 0) {
+    inboxList.innerHTML = `
+      <div class="inbox-empty">
+        <i class="fa-solid fa-bell-slash"></i>
+        <p>No notifications yet</p>
+      </div>
+    `;
+    return;
+  }
+  
+  inboxList.innerHTML = '';
+  
+  notifications.forEach(notif => {
+    const isRead = readNotifications.includes(notif.id);
+    if (!isRead) {
+      notif.unread = true;
+    } else {
+      notif.unread = false;
+    }
+    
+    const notifElement = document.createElement('div');
+    notifElement.className = `inbox-item ${notif.unread ? 'unread' : ''}`;
+    notifElement.innerHTML = `
+      <div class="inbox-title">
+        <span>${notif.title}</span>
+      </div>
+      <div class="inbox-desc">${notif.description}</div>
+      <div class="inbox-time">${formatNotificationTime(notif.timestamp)}</div>
+    `;
+    
+    notifElement.addEventListener('click', () => {
+      notif.unread = false;
+      notifElement.classList.remove('unread');
+      
+      // Save to localStorage that this notification was read
+      const readNotifications = JSON.parse(localStorage.getItem('readNotifications') || '[]');
+      if (!readNotifications.includes(notif.id)) {
+        readNotifications.push(notif.id);
+        localStorage.setItem('readNotifications', JSON.stringify(readNotifications));
+      }
+      
+      updateInboxBadge();
+    });
+    
+    inboxList.appendChild(notifElement);
+  });
+}
+
+
+
+// badge count
+function updateInboxBadge() {
+    const unreadCount = notifications.filter(n => n.unread).length;
+    const inboxBadge = document.getElementById('inboxBadge');
+    const mobileInboxBadge = document.getElementById('mobileInboxBadge');
+    
+    if (unreadCount > 0) {
+        inboxBadge.style.display = 'block';
+        inboxBadge.setAttribute('data-count', unreadCount > 9 ? '9+' : unreadCount);
+        mobileInboxBadge.style.display = 'block';
+        mobileInboxBadge.setAttribute('data-count', unreadCount > 9 ? '9+' : unreadCount);
+    } else {
+        inboxBadge.style.display = 'none';
+        mobileInboxBadge.style.display = 'none';
+    }
+}
+
+// auto-refresh for notification times 
+setInterval(() => {
+    if (inboxPanel.classList.contains('open')) {
+        loadNotifications();
+    }
+}, 60000); // Update every minute
+
+
+// Initialize notifications
+loadNotifications();
+updateInboxBadge();
+
+// Add sample notification (for demo purposes)
+function addSampleNotification(title, description) {
+  notifications.unshift({
+    id: Date.now(),
+    title,
+    description,
+    timestamp: Date.now(), // Exact timestamp
+    unread: true
+  });
+  
+  saveNotificationsToStorage();
+  loadNotifications();
+  updateInboxBadge();
+  
+  showNotification('New notification received');
+}
+
+// Demo: Add a notification after 5 seconds
+setTimeout(() => {
+  addSampleNotification('AI Assistant Enhanced', 'We\'ve improved the AI code generation with better suggestions and faster responses.');
+}, 5000);
 
 // ------------------- Offline Support -------------------
 if ('serviceWorker' in navigator) {
