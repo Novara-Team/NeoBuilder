@@ -1,0 +1,3867 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neo Builder — AI-Powered Live Code Playground</title>
+
+<!-- Font Awesome with cache busting -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css?v=1.0" rel="stylesheet">
+
+<!-- JSZip with cache busting -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js?v=1.0"></script>
+
+<!-- Favicon with cache busting -->
+<link rel="icon" href="icon.png?v=1.0" type="image/png">
+
+<style>
+:root{
+  --bg:#0f1720; --panel:#0b1220; --card:#0f1726; --accent:#22c55e;
+  --muted:#9aa4b2; --glass:rgba(255,255,255,0.03);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family: Inter, "Segoe UI", Tahoma, system-ui;
+  color:#e6eef6; background:linear-gradient(180deg,var(--bg),#071019 160%);
+  min-height:100vh; display:flex; flex-direction:column;
+}
+/* Loading Screen */
+#loadingScreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  transition: opacity 0.5s ease;
+}
+.loading-logo {
+  width: 80px;
+  height: 80px;
+  border-radius: 20px;
+  background: linear-gradient(135deg,var(--accent),#16a34a);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: 700;
+  font-size: 32px;
+  color: #04201a;
+  box-shadow: 0 12px 30px rgba(34,197,94,0.3);
+  margin-bottom: 20px;
+  animation: pulse 1.5s infinite;
+}
+.loading-text {
+  font-size: 18px;
+  color: var(--muted);
+  margin-bottom: 30px;
+}
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(255,255,255,0.1);
+  border-top: 4px solid var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+/* Topbar */
+.topbar{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:14px 20px; border-bottom:1px solid rgba(255,255,255,0.03);
+  backdrop-filter: blur(4px); background:linear-gradient(90deg, rgba(255,255,255,0.02), transparent);
+  gap:10px;
+}
+.brand{display:flex; align-items:center; gap:12px;}
+.logo{
+  width:40px; height:40px; border-radius:12px;
+  background:linear-gradient(135deg,var(--accent),#16a34a);
+  display:flex; justify-content:center; align-items:center;
+  font-weight:700; font-size:18px; color:#04201a; box-shadow:0 6px 18px rgba(34,197,94,0.12);
+}
+.brand h1{font-size:16px;}
+.brand p{font-size:12px; color:var(--muted);}
+.topbar .btn{display:flex; align-items:center; gap:6px; padding:10px 14px; border-radius:10px; border:none; cursor:pointer; font-weight:600; font-size:13px; transition:0.2s;}
+.topbar .btn i{font-size:14px;}
+.btn.primary{background:linear-gradient(180deg,var(--accent),#16a34a); color:#04201a; box-shadow:0 6px 18px rgba(34,197,94,0.12);}
+.btn.secondary{background:transparent; color:var(--muted); border:1px solid rgba(255,255,255,0.03);}
+.btn:hover{opacity:0.9; transform:scale(1.03);}
+/* Layout */
+.layout{
+  display:grid; grid-template-columns:280px 1fr; gap:18px;
+  padding:20px; width:100%; max-width:1400px; margin:auto; height:calc(100vh - 70px);
+}
+#sidebar{
+  background:var(--panel); border-radius:12px; padding:14px; overflow:auto;
+  box-shadow:0 8px 30px rgba(2,6,23,0.6); border:1px solid rgba(255,255,255,0.02);
+}
+#sidebar h3{color:var(--accent); margin-bottom:10px; font-size:13px;}
+.templateItem{
+  display:flex; align-items:center; gap:10px; background:var(--glass);
+  padding:10px; border-radius:10px; margin-bottom:10px; cursor:pointer;
+  transition:0.2s; border:1px solid rgba(255,255,255,0.02);
+}
+.templateItem:hover{background:rgba(255,255,255,0.02); transform:translateY(-3px);}
+.templateItem i{width:32px;height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.02); color:var(--accent);}
+.templateItem .tname{font-size:14px; color:#e8f1fb; flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;}
+
+/* Main panel */
+#mainWrapper{display:flex; flex:1; z-index: 2; overflow:hidden; border-radius:12px; box-shadow:0 10px 30px rgba(2,6,23,0.6); position:relative;}
+#editorPanel, #previewPanel{flex:1; position: relative; display:flex; z-index: 2; flex-direction:column; overflow:hidden; transition:all 0.4s ease;}
+#editorPanel.hidden{flex:0; opacity:0;}
+#previewPanel.hidden{flex:0; opacity:0;}
+.editorCard, .previewCard{
+  background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.008));
+  border-radius:12px; padding:12px; border:1px solid rgba(255,255,255,0.02); display:flex; flex-direction:column; gap:10px;
+}
+textarea#codeEditor{flex:1; width:100%; resize:none; border-radius:10px; padding:14px; background:#02060a; color:#e6eef6; border:1px solid rgba(255,255,255,0.02); font-family:ui-monospace, monospace; font-size:13px; line-height:1.5;}
+.controls{display:flex; gap:10px; margin-top:8px; flex-wrap:wrap;}
+.previewTop{display:flex; align-items:center; gap:10px; padding:10px; background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);}
+.previewWindow{flex:1; overflow:auto; background:white; border-radius:8px; border:1px solid #ddd; display:flex; justify-content:center; align-items:center;}
+iframe#iframePreview{width:100%;height:100%;border:0; display:block; border-radius:8px;}
+.footerNote{font-size:12px;color:var(--muted); text-align:center; margin:18px 0;}
+#contextMenu{
+  position:absolute; display:none; background:#0f1720; border:1px solid var(--accent);
+  border-radius:8px; z-index:1000; box-shadow:0 4px 12px rgba(0,0,0,0.5);
+}
+#contextMenu div{padding:8px 12px; cursor:pointer; color:#e6eef6; display:flex; align-items:center; gap:8px;}
+#contextMenu div:hover{background:rgba(34,197,94,0.2);}
+
+/* Auto Refresh Toggle */
+.auto-refresh-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+  font-size: 12px;
+  color: var(--muted);
+}
+.auto-refresh-toggle:hover {
+  background: rgba(255,255,255,0.1);
+}
+.auto-refresh-toggle.active {
+  background: rgba(34,197,94,0.15);
+  color: var(--accent);
+  border-color: rgba(34,197,94,0.3);
+}
+.auto-refresh-toggle i {
+  font-size: 14px;
+}
+
+
+#aiAssistant.minimized {
+  height: 60px;
+  width: 200px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(34,197,94,0.15), rgba(34,197,94,0.1));
+  border: 1px solid rgba(34,197,94,0.2);
+  box-shadow: 0 8px 24px rgba(34,197,94,0.2);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+#aiAssistant.minimized:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(34,197,94,0.25);
+}
+
+#aiAssistant.minimized header {
+  padding: 10px 12px;
+  background: transparent;
+  border-bottom: 1px solid rgba(34,197,94,0.1);
+  justify-content: center;
+}
+
+#aiAssistant.minimized header strong {
+  font-size: 13px;
+  color: var(--accent);
+}
+
+#aiAssistant.minimized header .controls {
+  display: none;
+}
+
+#aiAssistant.minimized header .controls button#minimizeAiBtn {
+  display: block;
+  position: absolute;
+  right: 8px;
+  top: 8px;
+}
+
+#aiAssistant.minimized header .controls button#minimizeAiBtn i {
+  font-size: 14px;
+}
+
+/* Copy code button for AI chat */
+.ai-message pre {
+  position: relative;
+}
+
+.copy-code-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.2s ease;
+  opacity: 0;
+}
+
+.copy-code-btn:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+.ai-message pre:hover .copy-code-btn {
+  opacity: 1;
+}
+
+/* Modern File Management System */
+.file-manager {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.file-manager-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.file-manager-header h3 {
+  color: var(--accent);
+  font-size: 14px;
+  margin: 0;
+}
+
+.file-manager-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.file-manager-actions button {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--muted);
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: 0.2s;
+}
+
+.file-manager-actions button:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255,255,255,0.03);
+  padding: 10px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255,255,255,0.05);
+  cursor: pointer;
+}
+
+.file-item:hover {
+  background: rgba(255,255,255,0.05);
+  transform: translateY(-1px);
+  border-color: rgba(255,255,255,0.1);
+}
+
+.file-item.active {
+  background: rgba(34,197,94,0.12);
+  border-color: rgba(34,197,94,0.3);
+}
+
+.file-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.08);
+  font-size: 15px;
+  transition: all 0.3s ease;
+}
+
+.file-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+.file-name {
+  font-size: 14px;
+  color: #e8f1fb;
+  font-weight: 500;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.file-meta {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.file-actions {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.file-item:hover .file-actions {
+  opacity: 1;
+}
+
+.file-action-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  font-size: 12px;
+}
+
+.file-action-btn:hover {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+
+.file-action-btn.delete:hover {
+  color: #ef4444;
+  background: rgba(239,68,68,0.1);
+}
+
+/* Updated File Search Design */
+.file-search {
+  position: relative;
+  margin-bottom: 15px;
+}
+
+.file-search i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 14px;
+  z-index: 2;
+}
+
+#fileSearchInput {
+  width: 100%;
+  padding: 10px 12px 10px 38px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  color: #e8f1fb;
+  font-size: 13px;
+  transition: all 0.3s ease;
+}
+
+#fileSearchInput:focus {
+  outline: none;
+  border-color: rgba(34,197,94,0.4);
+  box-shadow: 0 0 0 2px rgba(34,197,94,0.1);
+  background: rgba(255,255,255,0.08);
+}
+
+#fileSearchInput::placeholder {
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+/* Empty state for file manager */
+.file-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 0;
+  color: var(--muted);
+  text-align: center;
+}
+
+.file-empty-state i {
+  font-size: 36px;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+
+.file-empty-state p {
+  font-size: 13px;
+  margin: 0;
+}
+
+/* File type specific colors */
+.file-icon.html { background: rgba(227,76,38,0.15); color: #e34c26; }
+.file-icon.css { background: rgba(21,114,182,0.15); color: #1572b6; }
+.file-icon.js { background: rgba(247,223,30,0.15); color: #f7df1e; }
+.file-icon.image { background: rgba(48,179,70,0.15); color: #30b346; }
+
+
+/* Refresh Button */
+.refresh-btn {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--muted);
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: 0.2s;
+}
+.refresh-btn:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+/* Device Preview Dropdown */
+.device-preview {
+  position: relative;
+  display: inline-block;
+}
+.device-toggle {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--muted);
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: 0.2s;
+}
+.device-toggle:hover {
+  background: rgba(255,255,255,0.1);
+}
+.device-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: var(--panel);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 8px;
+  z-index: 100;
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 120px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.device-dropdown.show {
+  display: flex;
+}
+.device-option {
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: 0.2s;
+}
+.device-option:hover {
+  background: rgba(255,255,255,0.05);
+}
+.device-option.active {
+  background: rgba(34,197,94,0.15);
+  color: var(--accent);
+}
+
+/* Device Preview Sizes */
+.preview-mobile .previewWindow {
+  width: 375px;
+  height: 667px;
+  margin: 0 auto;
+}
+.preview-tablet .previewWindow {
+  width: 768px;
+  height: 1024px;
+  margin: 0 auto;
+}
+.preview-desktop .previewWindow {
+  width: 100%;
+  height: 100%;
+}
+
+/* Empty State Animation */
+.emptyState{
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  color:var(--muted); font-size:14px; gap:14px; animation:fadeIn 0.6s ease;
+}
+.emptyState i{
+  font-size:42px; color:var(--accent); animation:bounce 1.6s infinite;
+}
+@keyframes fadeIn{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+@keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+
+.highlight-line {
+  background-color: rgba(34,197,94,0.3); 
+  transition: background-color 0.8s ease;
+}
+
+.credit-counter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  margin-left: 10px;
+}
+.credit-counter span {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Next-Gen AI Assistant Chat */
+#aiAssistant {
+  display: none; /* Keep hidden initially */
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 420px;
+  height: 540px;
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  background: rgba(15, 23, 42, 0.75);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: all 0.35s ease;
+  font-family: "Inter", "Segoe UI", sans-serif;
+  z-index: 99999 !important;
+}
+
+
+#aiAssistant.minimized {
+  height: 64px;
+  width: 220px;
+  border-radius: 14px;
+}
+
+/* 🌐 Fullscreen Mode */
+#aiAssistant.fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  bottom: 0;
+  right: 0;
+  border-radius: 0;
+  border: none;
+  margin: 0;
+  padding: 0;
+
+  /* Glass + overlay effect */
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  background: rgba(10, 15, 25, 0.92);
+
+  /* Smooth transition */
+  transition: all 0.4s ease-in-out;
+  animation: fullscreenFade 0.35s ease forwards;
+  z-index: 999999; /* Always on top */
+}
+
+/* Nice fade-in for fullscreen */
+@keyframes fullscreenFade {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+
+/* Header */
+#aiAssistant header {
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.04);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#aiAssistant header strong {
+  font-size: 15px;
+  font-weight: 600;
+  color: #22c55e;
+  letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#aiAssistant header .controls {
+  display: flex;
+  gap: 10px;
+}
+
+#aiAssistant header .controls button {
+  background: rgba(255, 255, 255, 0.06);
+  border: none;
+  color: #cbd5e1;
+  font-size: 14px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+#aiAssistant header .controls button:hover {
+  background: rgba(34, 197, 94, 0.25);
+  color: #fff;
+}
+
+/* Chat area */
+#aiChat {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.01), rgba(0, 0, 0, 0.05));
+  scrollbar-width: thin;
+  scrollbar-color: rgba(34, 197, 94, 0.4) transparent;
+}
+#aiChat::-webkit-scrollbar {
+  width: 6px;
+}
+#aiChat::-webkit-scrollbar-thumb {
+  background: rgba(34, 197, 94, 0.4);
+  border-radius: 8px;
+}
+
+/* Messages */
+.ai-message {
+  max-width: 80%;
+  padding: 14px 18px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.55;
+  animation: fadeIn 0.35s ease;
+  word-wrap: break-word;
+  backdrop-filter: blur(10px);
+}
+
+.ai-message.user {
+  background: rgba(34, 197, 94, 0.18);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  color: #d1fae5;
+  align-self: flex-end;
+  border-bottom-right-radius: 6px;
+}
+
+.ai-message.assistant {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+  align-self: flex-start;
+  border-bottom-left-radius: 6px;
+}
+
+.ai-message.error {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+  align-self: flex-start;
+}
+
+.ai-message pre {
+  background: rgba(0, 0, 0, 0.4);
+  padding: 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+.ai-message code {
+  font-family: "Fira Code", monospace;
+  font-size: 13px;
+}
+
+/* Footer */
+#aiAssistant footer {
+  padding: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.03);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+#aiInput {
+  flex: 1;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  font-size: 14px;
+  color: #fff;
+  transition: 0.2s;
+}
+#aiInput:focus {
+  outline: none;
+  border-color: rgba(34, 197, 94, 0.6);
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.3);
+}
+
+#sendAiBtn {
+  padding: 12px 18px;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.35);
+  transition: all 0.25s ease;
+}
+#sendAiBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(34, 197, 94, 0.45);
+}
+#sendAiBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Typing dots */
+.ai-typing-indicator {
+  display: flex;
+  gap: 6px;
+  padding: 10px 14px;
+  background: rgba(34, 197, 94, 0.12);
+  border-radius: 14px;
+  align-self: flex-start;
+}
+.ai-typing-dot {
+  width: 7px;
+  height: 7px;
+  background: #22c55e;
+  border-radius: 50%;
+  animation: typingBounce 1.4s infinite ease-in-out;
+}
+.ai-typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.ai-typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typingBounce {
+  0%, 80%, 100% { transform: scale(0.7); opacity: 0.5; }
+  40% { transform: scale(1); opacity: 1; }
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
+/* Mobile Menu Button */
+.mobile-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  z-index: 2000; 
+  color: var(--muted);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: 0.2s;
+}
+
+.mobile-menu-btn:hover {
+  background: rgba(255,255,255,0.05);
+  z-index: 2000;
+}
+
+.mobile-menu-dropdown {
+  display: none;
+  position: absolute;
+  top: 60px; 
+  right: 20px;
+  z-index: 99999 !important; 
+  background: var(--panel);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 10px;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 150px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  pointer-events: auto; /* ensure clicks work */
+}
+
+.mobile-menu-dropdown.show {
+  display: flex;
+}
+
+/* Ensure dropdown buttons are visible */
+.mobile-menu-dropdown .btn {
+  display: flex !important;       /* force them to show */
+  color: #fff;                     /* visible text color */
+  background-color: #333;          /* dark background for contrast */
+  padding: 5px 10px;
+  border-radius: 5px;
+  z-index: 1;
+  width: 100%;
+  justify-content: flex-start;
+  gap: 5px;
+  font-size: 14px;
+}
+
+/* Add custom viewport controls */
+.custom-viewport {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.custom-viewport input {
+  width: 50px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 4px;
+  padding: 2px 4px;
+  color: #fff;
+  text-align: center;
+}
+
+.custom-viewport span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.custom-viewport button {
+  background: rgba(34,197,94,0.2);
+  border: 1px solid rgba(34,197,94,0.3);
+  color: var(--accent);
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.custom-viewport button:hover {
+  background: rgba(34,197,94,0.3);
+}
+
+/* Toggle Sidebar Button */
+.toggle-sidebar-btn {
+  display: none;
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 1000;
+  background: linear-gradient(180deg,var(--accent),#16a34a);
+  color: #04201a;
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(34,197,94,0.3);
+  transition: 0.3s;
+}
+.toggle-sidebar-btn:hover {
+  transform: scale(1.1);
+}
+
+/* Notifications */
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: var(--panel);
+  border: 1px solid rgba(34,197,94,0.3);
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: #fff;
+  font-size: 14px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+}
+.notification.show {
+  transform: translateX(0);
+}
+.notification.success {
+  border-color: rgba(34,197,94,0.5);
+}
+.notification.error {
+  border-color: rgba(239,68,68,0.5);
+}
+.notification.info {
+  border-color: rgba(59,130,246,0.5);
+}
+.notification .close-notification {
+  display: none;
+  margin-left: auto;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+.notification:hover .close-notification {
+  display: block;
+}
+.notification .close-notification:hover {
+  opacity: 1;
+}
+
+/* Performance Meter */
+.performance-meter {
+  position: fixed;
+  bottom: 20px;
+  left: 80px;
+  background: var(--panel);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  color: var(--muted);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.performance-meter.good { color: var(--accent); }
+.performance-meter.warning { color: #f59e0b; }
+.performance-meter.bad { color: #ef4444; }
+
+/* Drag and Drop Zone */
+.drag-drop-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(15,23,32,0.95);
+  z-index: 9999;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  gap: 20px;
+  color: #fff;
+}
+.drag-drop-overlay.active {
+  display: flex;
+}
+.drag-drop-icon {
+  font-size: 48px;
+  color: var(--accent);
+}
+.drag-drop-text {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* AI Model Selector */
+.ai-model-selector {
+  display: none;
+  position: absolute;
+  top: 60px;
+  right: 20px;
+  background: var(--panel);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 10px;
+  z-index: 99999;
+  min-width: 200px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.ai-model-selector.show {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.model-option {
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.model-option:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+.model-option.active {
+  background: rgba(34,197,94,0.15);
+  color: var(--accent);
+}
+
+.model-option i {
+  font-size: 14px;
+  color: var(--accent);
+}
+
+/* Show model selector only in fullscreen on desktop */
+#aiAssistant.fullscreen .ai-model-selector {
+  display: flex;
+}
+
+/* Share Project Modal */
+.share-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.8);
+  z-index: 9999;
+  display: none;
+  justify-content: center;
+  align-items: center;
+}
+
+.share-modal.active {
+  display: flex;
+}
+.share-content {
+  background: var(--panel);
+  border-radius: 12px;
+  padding: 20px;
+  width: 400px;
+ max-width: 90%;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.share-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+.share-header h3 {
+  color: var(--accent);
+  font-size: 16px;
+}
+.share-close {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 18px;
+}
+.share-url {
+  background: #02060a;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  padding: 10px;
+  margin: 10px 0;
+  font-size: 12px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.share-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+.share-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: 0.2s;
+}
+.share-btn.copy {
+  background: var(--accent);
+  color: #04201a;
+}
+.share-btn.close {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+
+/*  Modern Stop Generating Button */
+#stopAiBtn {
+  padding: 10px 18px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #f87171;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: all 0.25s ease;
+  display: none;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+}
+
+#stopAiBtn:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.25);
+  transform: translateY(-1px);
+}
+
+#stopAiBtn:active {
+  transform: scale(0.96);
+  background: rgba(239, 68, 68, 0.35);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
+}
+
+
+/* Voice Command Button */
+.voice-command-btn {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--muted);
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: 0.2s;
+}
+.voice-command-btn:hover {
+  background: rgba(255,255,255,0.1);
+}
+.voice-command-btn.listening {
+  background: rgba(34,197,94,0.15);
+  color: var(--accent);
+  border-color: rgba(34,197,94,0.3);
+}
+.voice-command-btn.listening i {
+  animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@media (max-width: 900px) {
+  .file-search {
+    margin: 0 10px 12px;
+  }
+  
+  #fileSearchInput {
+    font-size: 12px;
+    padding: 8px 10px 8px 34px;
+  }
+  
+  .file-search i {
+    left: 10px;
+    font-size: 13px;
+  }
+  .layout {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .topbar {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+  }
+  .brand {
+    flex: 1;
+    min-width: auto;
+    justify-content: flex-start;
+    margin-bottom: 0;
+  }
+  .topbar .btn:not(.mobile-menu-btn) {
+    display: none;
+  }
+  .mobile-menu-btn {
+    display: block;
+  }
+  .mobile-menu-dropdown {
+    display: none;
+  }
+
+  .mobile-menu-dropdown.show {
+    display: flex !important;
+    position: fixed !important;
+    top: 60px;
+    right: 10px;
+    z-index: 99999 !important;
+  }
+  
+  .toggle-sidebar-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #sidebar {
+    max-height: 200px;
+    order: 2;
+    position: fixed;
+    left: -300px;
+    top: 70px;
+    bottom: 0;
+    width: 280px;
+    z-index: 999;
+    transition: left 0.3s ease;
+  }
+  #sidebar.show {
+    left: 0;
+  }
+  .editorCard {
+     order: 3;
+  }
+  .previewCard {
+    order: 3;
+    position: relative;
+  }
+  .footerNote {
+    font-size: 11px;
+    margin: 12px 0;
+  }
+
+  #aiAssistant {
+    width: 90%;
+    height: 380px;
+    bottom: 20px;
+    right: 5%;
+    left: 5%;
+  }
+
+  .preview-mobile .previewWindow,
+  .preview-tablet .previewWindow {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+  }
+
+  .performance-meter {
+    left: 70px;
+    bottom: 15px;
+    font-size: 11px;
+  }
+  .share-content {
+    width: 90%;
+    padding: 15px;
+  }
+}
+
+@media (max-width: 600px) {
+  .layout {
+    padding: 12px;
+    gap: 10px;
+  }
+  .topbar {
+    padding: 10px 12px;
+  }
+  .brand h1 {
+    font-size: 14px;
+  }
+  .brand p {
+    font-size: 11px;
+  }
+  .templateItem {
+    padding: 8px;
+    font-size: 12px;
+  }
+  .templateItem i:first-child {
+    display: none;
+  }
+  .previewTop {
+    padding: 8px;
+    font-size: 12px;
+  }
+  .emptyState i {
+    font-size: 36px;
+  }
+  .emptyState p {
+    font-size: 12px;
+  }
+
+  #aiAssistant {
+    width: 90%;
+    height: 350px;
+    bottom: 15px;
+    right: 5%;
+    left: 5%;
+    position: fixed !important;
+  }
+
+  /* new rule */
+  #aiAssistant.minimized {
+    width: 180px;
+    height: 60px;
+    bottom: 15px;
+    right: 5%;
+    left: auto;
+  }
+  
+  .file-search {
+    margin: 0 8px 10px;
+  }
+
+  .ai-message {
+    max-width: 90%;
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  .notification {
+    top: 10px;
+    right: 10px;
+    font-size: 12px;
+    padding: 10px 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .ai-model-selector {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 300px;
+    z-index: 999999;
+    background: var(--panel);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  }
+  
+  .model-option {
+    padding: 12px 15px;
+    font-size: 14px;
+    border-radius: 8px;
+  }
+  
+  .model-option i {
+    font-size: 16px;
+  }
+  
+  /* Overlay background for mobile */
+  .ai-model-selector.show {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .ai-model-selector.show::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    z-index: -1;
+  }
+}
+
+@media (max-width: 390px) {
+  .layout {
+    padding: 8px;
+    gap: 8px;
+  }
+  
+  .topbar {
+    padding: 10px 12px;
+    flex-wrap: wrap;
+  }
+  
+  .brand h1 {
+    font-size: 13px;
+  }
+  
+  .brand p {
+    font-size: 10px;
+  }
+  
+  .topbar .btn {
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+  
+  #sidebar {
+    width: 100%;
+    max-height: 180px;
+    position: fixed;
+    left: -100%;
+    z-index: 1000;
+    transition: left 0.3s ease;
+  }
+  
+  #sidebar.show {
+    left: 0;
+  }
+  
+  .file-item {
+    padding: 8px;
+    font-size: 12px;
+  }
+  
+  .file-icon {
+    width: 30px;
+    height: 30px;
+    font-size: 13px;
+  }
+  
+  .file-name {
+    font-size: 12px;
+  }
+  
+  .file-meta {
+    font-size: 10px;
+  }
+  
+  #editorPanel, #previewPanel {
+    min-height: 300px;
+  }
+  
+  textarea#codeEditor {
+    font-size: 12px;
+    padding: 10px;
+  }
+  
+  .previewTop {
+    padding: 8px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  
+  .device-toggle, .auto-refresh-toggle, .refresh-btn {
+    font-size: 11px;
+    padding: 5px 8px;
+  }
+  
+  .previewWindow {
+    height: 500px;
+  }
+  
+  .emptyState i {
+    font-size: 32px;
+  }
+  
+  .emptyState p {
+    font-size: 11px;
+  }
+  
+  .footerNote {
+    font-size: 10px;
+    margin: 12px 0;
+  }
+  
+  #aiAssistant {
+    width: 95%;
+    height: 320px;
+    bottom: 15px;
+    right: 2.5%;
+    left: 2.5%;
+  }
+  
+  #aiAssistant.minimized {
+    width: 160px;
+    height: 50px;
+    bottom: 15px;
+    right: 2.5%;
+  }
+  
+  .ai-message {
+    max-width: 95%;
+    padding: 10px 12px;
+    font-size: 11px;
+  }
+  
+  .notification {
+    top: 8px;
+    right: 8px;
+    font-size: 11px;
+    padding: 8px 10px;
+  }
+  
+  .performance-meter {
+    left: 50px;
+    bottom: 8px;
+    font-size: 10px;
+    padding: 4px 8px;
+  }
+  
+  .toggle-sidebar-btn {
+    width: 40px;
+    height: 40px;
+    bottom: 15px;
+    left: 15px;
+  }
+  
+  .mobile-menu-dropdown {
+    top: 50px;
+    right: 10px;
+    min-width: 140px;
+  }
+  
+  .mobile-menu-dropdown .btn {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+}
+
+/* Add these responsive styles for mobile devices */
+@media (max-width: 430px) {
+  #aiAssistant header .controls {
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  
+  #aiAssistant header .controls button {
+    font-size: 12px;
+    padding: 5px 6px;
+  }
+  
+  #aiAssistant header .controls button i {
+    font-size: 12px;
+  }
+  
+  #aiAssistant header strong {
+    font-size: 13px;
+  }
+  
+  #aiAssistant footer {
+    padding: 12px;
+    gap: 8px;
+  }
+  
+  #aiInput {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  
+  #sendAiBtn, #stopAiBtn {
+    padding: 10px 14px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 390px) {
+  #aiAssistant header .controls {
+    gap: 4px;
+  }
+  
+  #aiAssistant header .controls button {
+    font-size: 11px;
+    padding: 4px 5px;
+  }
+  
+  #aiAssistant header .controls button i {
+    font-size: 11px;
+  }
+  
+  #aiAssistant header strong {
+    font-size: 12px;
+  }
+  
+  #aiAssistant footer {
+    padding: 10px;
+    gap: 6px;
+  }
+  
+  #aiInput {
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+  
+  #sendAiBtn, #stopAiBtn {
+    padding: 8px 12px;
+    font-size: 11px;
+  }
+  
+  #chatModeBtn {
+    display: none; /* Hide chat mode text on smallest screens */
+  }
+  
+  #chatModeBtn i {
+    display: block; /* Show only icon */
+  }
+}
+
+@media (max-width: 344px) {
+  #aiAssistant header .controls button {
+    font-size: 10px;
+    padding: 3px 4px;
+  }
+  
+  #aiAssistant header .controls button i {
+    font-size: 10px;
+  }
+  
+  #aiAssistant header strong {
+    font-size: 11px;
+    gap: 4px;
+  }
+  
+  #aiAssistant footer {
+    padding: 8px;
+    gap: 4px;
+  }
+  
+  #aiInput {
+    padding: 6px 8px;
+    font-size: 10px;
+  }
+  
+  #sendAiBtn, #stopAiBtn {
+    padding: 6px 10px;
+    font-size: 10px;
+  }
+  
+  /* Hide button text, show only icons */
+  #fullscreenAiBtn span,
+  #minimizeAiBtn span,
+  #closeAiBtn span,
+  #modelSelectorBtn span {
+    display: none;
+  }
+}
+
+/* Add this to ensure proper spacing in minimized state */
+#aiAssistant.minimized header .controls {
+  display: flex;
+  gap: 4px;
+}
+
+#aiAssistant.minimized header .controls button {
+  padding: 4px;
+  font-size: 12px;
+}
+
+@media (max-width: 360px) {
+  .topbar {
+    padding: 8px 10px;
+  }
+  
+  .brand h1 {
+    font-size: 12px;
+  }
+  
+  .topbar .btn {
+    padding: 6px 8px;
+    font-size: 10px;
+  }
+  
+  .file-item {
+    padding: 6px;
+  }
+  
+  .file-icon {
+    width: 28px;
+    height: 28px;
+  }
+  
+  #aiAssistant {
+    height: 300px;
+  }
+  
+  .previewWindow {
+    height: 450px;
+  }
+}
+
+
+@media (max-width: 400px) {
+  .layout {
+    padding: 10px;
+  }
+  .templateItem {
+    padding: 6px;
+    font-size: 11px;
+  }
+  .templateItem i {
+    width: 24px;
+    height: 24px;
+    font-size: 11px;
+  }
+  .emptyState i {
+    font-size: 32px;
+  }
+  .emptyState p {
+    font-size: 11px;
+  }
+  #aiAssistant {
+    left: 20px;  /* default position */
+    top: 20px;
+    height: 350px;
+    position: fixed;
+    cursor: move;
+    user-select: none;
+  }
+  .ai-message {
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+  .performance-meter {
+    left: 60px;
+    bottom: 10px;
+    padding: 4px 8px;
+  }
+}
+
+@media (min-width: 1400px) {
+  .layout {
+    max-width: 1600px;
+  }
+  #sidebar {
+    width: 320px;
+  }
+}
+
+@media (max-height: 600px) and (orientation: landscape) {
+  .layout {
+    height: auto;
+    min-height: calc(100vh - 70px);
+  }
+  #sidebar {
+    max-height: 300px;
+  }
+  .editorCard {
+    height: 250px;
+  }
+  #aiAssistant {
+    left: 20px;  /* default position */
+    top: 20px;
+    height: 380px;
+    position: fixed;
+    cursor: move;
+    user-select: none;
+  }
+}
+
+</style>
+</head>
+<body>
+  <!-- Loading Screen -->
+  <div id="loadingScreen">
+    <div class="loading-logo">
+      <img src="icon.png" alt="Neo Builder" />
+    </div>
+    <div class="loading-text">Loading Neo Builder...</div>
+    <div class="loading-spinner"></div>
+  </div>
+
+  <div class="topbar">
+<div class="brand">
+  <div class="logo">
+    <img src="icon.png" alt="Neo Builder" />
+  </div>
+  <div>
+        <h1>Neo Builder</h1>
+        <p>Editor · Preview · Files</p>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button id="createFileBtn" class="btn secondary"><i class="fa-solid fa-file-circle-plus"></i> Create File</button>
+      <button id="importFileBtn" class="btn secondary"><i class="fa-solid fa-file-import"></i> Import</button>
+      <button id="togglePreviewBtn" class="btn primary"><i class="fa-solid fa-eye"></i> Preview</button>
+      <button class="btn secondary" id="exportZipBtn"><i class="fa-solid fa-file-archive"></i> Export ZIP</button>
+      <button class="btn secondary" id="askAiBtn"><i class="fa-solid fa-robot"></i> Ask AI</button>
+      <button class="btn secondary" id="shareProjectBtn"><i class="fa-solid fa-share"></i> Share</button>
+      <button class="btn secondary voice-command-btn" id="voiceCommandBtn"><i class="fa-solid fa-microphone"></i> Voice</button>
+      <div class="credit-counter" id="creditCounter">
+        <i class="fa-solid fa-coins"></i>
+        <span id="credits">10</span>/10
+      </div>
+      <button class="mobile-menu-btn" id="mobileMenuBtn">
+        <i class="fa-solid fa-ellipsis-vertical"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile menu moved outside topbar -->
+  <div class="mobile-menu-dropdown" id="mobileMenuDropdown">
+    <button id="mobileCreateFileBtn" class="btn secondary"><i class="fa-solid fa-file-circle-plus"></i> Create File</button>
+    <button id="mobileImportFileBtn" class="btn secondary"><i class="fa-solid fa-file-import"></i> Import</button>
+    <button id="mobileTogglePreviewBtn" class="btn primary"><i class="fa-solid fa-eye"></i> Preview</button>
+    <button class="btn secondary" id="mobileExportZipBtn"><i class="fa-solid fa-file-archive"></i> Export ZIP</button>
+    <button class="btn secondary" id="mobileAskAiBtn"><i class="fa-solid fa-robot"></i> Ask AI</button>
+    <button class="btn secondary" id="mobileShareProjectBtn"><i class="fa-solid fa-share"></i> Share</button>
+    <button class="btn secondary voice-command-btn" id="mobileVoiceCommandBtn"><i class="fa-solid fa-microphone"></i> Voice</button>
+  </div>
+
+<button id="fullscreenPreviewBtn" class="btn secondary"><i class="fa-solid fa-expand"></i> Full Screen</button>
+<button class="toggle-sidebar-btn" id="toggleSidebarBtn">
+  <i class="fa-solid fa-folder-open"></i>
+</button>
+
+
+<div class="layout">
+<aside id="sidebar">
+  <div class="file-manager">
+    <div class="file-manager-header">
+      <h3>Files</h3>
+      <div class="file-manager-actions">
+        <button id="sortFilesBtn" title="Sort files"><i class="fa-solid fa-sort"></i></button>
+        <button id="collapseFilesBtn" title="Collapse all"><i class="fa-solid fa-minimize"></i></button>
+      </div>
+    </div>
+    
+    <div class="file-search">
+      <i class="fa-solid fa-search"></i>
+      <input type="text" id="fileSearchInput" placeholder="Search files...">
+    </div>
+    
+    <div class="file-list" id="fileList">
+      <div class="file-empty-state">
+        <i class="fa-solid fa-folder-open"></i>
+        <p>No files yet. Create your first file!</p>
+      </div>
+    </div>
+  </div>
+</aside>
+  <div id="mainWrapper">
+    <section id="editorPanel" class="editorCard">
+      <div id="emptyState" class="emptyState">
+        <i class="fa-solid fa-file-circle-plus"></i>
+        <p>Start by creating a new file to write in 📄</p>
+      </div>
+      <textarea id="codeEditor" placeholder="Write HTML / CSS / JS here." style="display:none"></textarea>
+      <div class="controls" style="display:none">
+        <button id="clearBtn" class="btn secondary"><i class="fa-solid fa-eraser"></i> Clear</button>
+        <button id="copyBtn" class="btn secondary"><i class="fa-solid fa-copy"></i> Copy</button>
+      </div>
+    </section>
+    <section id="previewPanel" class="previewCard hidden">
+      <div class="previewTop"><strong>Preview</strong>
+        <div class="device-preview">
+          <div class="device-toggle" id="deviceToggle">
+            <i class="fa-solid fa-mobile-screen"></i>
+            <span>Desktop</span>
+            <i class="fa-solid fa-chevron-down"></i>
+          </div>
+          <div class="device-dropdown" id="deviceDropdown">
+            <div class="device-option" data-device="desktop"><i class="fa-solid fa-desktop"></i> Desktop</div>
+            <div class="device-option" data-device="tablet"><i class="fa-solid fa-tablet"></i> Tablet</div>
+            <div class="device-option" data-device="mobile"><i class="fa-solid fa-mobile"></i> Mobile</div>
+          </div>
+        </div>
+        <div class="auto-refresh-toggle" id="autoRefreshToggle">
+          <i class="fa-solid fa-rotate"></i>
+          <span>Auto Refresh</span>
+        </div>
+        <button class="refresh-btn" id="refreshPreviewBtn">
+          <i class="fa-solid fa-rotate-right"></i>
+          <span>Refresh</span>
+        </button>
+      </div>
+      <div class="previewWindow">
+        <iframe id="iframePreview" sandbox="allow-scripts allow-forms"></iframe>
+      </div>
+    </section>
+  </div>
+</div>
+<div class="footerNote">Neo Builder — Where clean code meets fast prototyping.</div>
+
+<!-- Context menu -->
+<div id="contextMenu">
+  <div id="renameFile"><i class="fa-solid fa-pen"></i> Rename</div>
+  <div id="duplicateFile"><i class="fa-solid fa-copy"></i> Duplicate</div>
+</div>
+
+
+
+<!-- AI Assistant Panel - Redesigned -->
+<div id="aiAssistant">
+  <header>
+    <strong><i class="fa-solid fa-robot"></i> AI Assistant</strong>
+    <div class="controls">
+      <button id="chatModeBtn"><i class="fa-solid fa-comment"></i> Chat Mode</button>
+      <button id="fullscreenAiBtn" title="Full Screen"><i class="fa-solid fa-expand"></i></button>
+      <button id="minimizeAiBtn" title="Minimize"><i class="fa-solid fa-minus"></i></button>
+      <button id="closeAiBtn" title="Close"><i class="fa-solid fa-xmark"></i></button>
+      <button id="modelSelectorBtn" title="Change Model"><i class="fa-solid fa-brain"></i></button>
+    </div>
+  </header>
+  <div id="aiChat"></div>
+  <footer>
+    <input id="aiInput" type="text" placeholder="Ask something about your code...">
+    <button id="sendAiBtn"><i class="fa-solid fa-paper-plane"></i></button>
+    <button id="stopAiBtn"><i class="fa-solid fa-stop"></i> Stop</button>
+  </footer>
+</div>
+
+<!-- Drag and Drop Overlay -->
+<div class="drag-drop-overlay" id="dragDropOverlay">
+  <i class="fa-solid fa-cloud-upload-alt drag-drop-icon"></i>
+  <div class="drag-drop-text">Drop files to import</div>
+  <div>Supported formats: .html, .css, .js</div>
+</div>
+
+<!-- Share Project Modal -->
+<div class="share-modal" id="shareModal">
+  <div class="share-content">
+    <div class="share-header">
+      <h3>Share Project (Demo)</h3>
+      <button class="share-close" id="shareCloseBtn"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <p>Copy this link to share your project:</p>
+    <div class="share-url" id="shareUrl"></div>
+    <div class="share-buttons">
+      <button class="share-btn copy" id="copyShareBtn"><i class="fa-solid fa-copy"></i> Copy Link</button>
+      <button class="share-btn close" id="closeShareBtn">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="share-modal" id="apiKeyModal">
+  <div class="share-content">
+    <div class="share-header">
+      <h3>OpenRouter API Key Required</h3>
+      <button class="share-close" id="apiKeyCloseBtn"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <p>To use the AI Assistant, please enter your OpenRouter API key:</p>
+    <input type="password" id="openRouterApiKey" placeholder="Enter your OpenRouter API key" style="width:100%; padding:10px; margin:10px 0; background:#02060a; border:1px solid rgba(255,255,255,0.1); border-radius:6px; color:#fff;">
+    <div class="share-buttons">
+      <button class="share-btn copy" id="saveApiKeyBtn"><i class="fa-solid fa-save"></i> Save Key</button>
+      <button class="share-btn close" id="cancelApiKeyBtn">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- AI Model Selector -->
+<div class="ai-model-selector" id="aiModelSelector">
+  <div class="model-option active" data-model="deepseek/deepseek-chat-v3.1:free">
+    <i class="fa-solid fa-check"></i>
+    <span>DeepSeek V3.1 (Default)</span>
+  </div>
+  <div class="model-option" data-model="qwen/qwen3-coder:free">
+    <i class="fa-solid fa-code"></i>
+    <span>Qwen Coder</span>
+  </div>
+  <div class="model-option" data-model="x-ai/grok-4-fast:free">
+    <i class="fa-solid fa-bolt"></i>
+    <span>Grok-4 Fast</span>
+  </div>
+</div>
+
+<!-- Performance Meter -->
+<div class="performance-meter" id="performanceMeter">
+  <i class="fa-solid fa-gauge-high"></i>
+  <span id="loadTime">0ms</span>
+</div>
+
+<input type="file" id="fileImportInput" accept=".html,.css,.js,.png,.jpg,.jpeg,.gif,.svg,.webp,.bmp,.ico,.tiff" style="display:none">
+
+<script>
+// ---------------- Loading Screen Logic ----------------
+const loadingScreen = document.getElementById('loadingScreen');
+
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    loadingScreen.style.opacity = '0';
+    setTimeout(() => {
+      loadingScreen.style.display = 'none';
+    }, 500);
+  }, 1500);
+});
+
+// ---------------- Core Editor Logic ----------------
+let files = [];
+let currentFile = null;
+const sidebarEl = document.getElementById('sidebar');
+const editor = document.getElementById('codeEditor');
+const iframe = document.getElementById('iframePreview');
+const editorPanel = document.getElementById('editorPanel');
+const previewPanel = document.getElementById('previewPanel');
+const toggleBtn = document.getElementById('togglePreviewBtn');
+const exportBtn = document.getElementById('exportZipBtn');
+const contextMenu = document.getElementById('contextMenu');
+const emptyState = document.getElementById('emptyState');
+const controls = document.querySelector('.controls');
+let contextFileIndex = null;
+
+const fullscreenBtn = document.getElementById('fullscreenPreviewBtn');
+const importBtn = document.getElementById('importFileBtn');
+const fileInput = document.getElementById('fileImportInput');
+const shareBtn = document.getElementById('shareProjectBtn');
+const mobileShareBtn = document.getElementById('mobileShareProjectBtn');
+const shareModal = document.getElementById('shareModal');
+const shareUrl = document.getElementById('shareUrl');
+const copyShareBtn = document.getElementById('copyShareBtn');
+const closeShareBtn = document.getElementById('closeShareBtn');
+const shareCloseBtn = document.getElementById('shareCloseBtn');
+const performanceMeter = document.getElementById('performanceMeter');
+const loadTime = document.getElementById('loadTime');
+const dragDropOverlay = document.getElementById('dragDropOverlay');
+
+// Voice command elements
+const voiceCommandBtn = document.getElementById('voiceCommandBtn');
+const mobileVoiceCommandBtn = document.getElementById('mobileVoiceCommandBtn');
+
+// Performance tracking
+let loadStartTime = performance.now();
+
+// Auto-save interval
+let autoSaveInterval = null;
+
+//MOBILE
+const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+const mobileMenuDropdown = document.getElementById('mobileMenuDropdown');
+
+// Toggle Sidebar Button
+const toggleSidebarBtn = document.getElementById('toggleSidebarBtn');
+
+// Device Preview Elements
+const deviceToggle = document.getElementById('deviceToggle');
+const deviceDropdown = document.getElementById('deviceDropdown');
+const deviceOptions = document.querySelectorAll('.device-option');
+let currentDevice = 'desktop';
+
+// Auto Refresh Elements
+const autoRefreshToggle = document.getElementById('autoRefreshToggle');
+const refreshPreviewBtn = document.getElementById('refreshPreviewBtn');
+let autoRefreshEnabled = false;
+let refreshTimeout = null;
+
+// Show notification function
+function showNotification(message, type = 'info') {
+  const notification = document.createElement('div');
+  notification.className = `notification ${type}`;
+  notification.innerHTML = `
+    <i class="fa-solid fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+    <span>${message}</span>
+    <span class="close-notification"><i class="fa-solid fa-xmark"></i></span>
+  `;
+  document.body.appendChild(notification);
+  
+  const closeBtn = notification.querySelector('.close-notification');
+  closeBtn.addEventListener('click', () => {
+    notification.classList.remove('show');
+    setTimeout(() => {
+      notification.remove();
+    }, 300);
+  });
+  
+  setTimeout(() => {
+    notification.classList.add('show');
+  }, 100);
+  
+  setTimeout(() => {
+    notification.classList.remove('show');
+    setTimeout(() => {
+      notification.remove();
+    }, 300);
+  }, 3000);
+}
+
+// Auto-save function
+function startAutoSave() {
+  if (autoSaveInterval) {
+    clearInterval(autoSaveInterval);
+  }
+  autoSaveInterval = setInterval(() => {
+    if (files.length > 0) {
+      saveFilesToStorage();
+      showNotification('Auto-saved files', 'info');
+    }
+  }, 300000); // 5 minutes
+}
+
+fileInput.setAttribute('accept', '.html,.css,.js,.png,.jpg,.jpeg,.gif,.svg,.webp,.bmp,.ico,.tiff');
+
+// Voice command functionality
+let recognition = null;
+let isListening = false;
+
+function initVoiceRecognition() {
+  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+    
+    recognition.onstart = function() {
+      isListening = true;
+      voiceCommandBtn.classList.add('listening');
+      mobileVoiceCommandBtn.classList.add('listening');
+      showNotification('Listening... Speak now', 'info');
+    };
+    
+    recognition.onresult = function(event) {
+      const transcript = event.results[0][0].transcript;
+      processVoiceCommand(transcript);
+    };
+    
+    recognition.onerror = function(event) {
+      isListening = false;
+      voiceCommandBtn.classList.remove('listening');
+      mobileVoiceCommandBtn.classList.remove('listening');
+      showNotification('Voice recognition error: ' + event.error, 'error');
+    };
+
+    recognition.onend = function() {
+      isListening = false;
+      voiceCommandBtn.classList.remove('listening');
+      mobileVoiceCommandBtn.classList.remove('listening');
+    };
+  } else {
+    showNotification('Speech recognition not supported in this browser', 'error');
+  }
+}
+
+function processVoiceCommand(transcript) {
+  showNotification(`Heard: "${transcript}"`, 'info');
+  
+  // Check if AI panel is open
+  if (aiPanel.style.display === 'flex') {
+    aiInput.value = transcript;
+    if (chatMode) {
+      // Process file creation commands in chat mode
+      if (transcript.toLowerCase().includes('create me an') || transcript.toLowerCase().includes('make me an')) {
+        const fileTypeMatch = transcript.match(/(html|css|js)/i);
+        const nameMatch = transcript.match(/named\s+(\w+)/i) || transcript.match(/create me an?\s+\w+\s+file\s+(?:named\s+)?(\w+)/i);
+        
+        if (fileTypeMatch && nameMatch) {
+          const type = fileTypeMatch[0].toLowerCase();
+          const name = nameMatch[1];
+          
+          // Create the file
+          files.push({name, type, code: ''});
+          saveFilesToStorage();
+          renderFiles();
+          
+          if (files.length === 1) {
+            currentFile = 0;
+            editor.value = '';
+            emptyState.style.display = 'none';
+            editor.style.display = 'block';
+            controls.style.display = 'flex';
+          }
+          
+          addMessage(`I've created ${name}.${type} file for you!`, 'assistant');
+          showNotification(`File "${name}.${type}" created`, 'success');
+        }
+      } else {
+        // Regular chat message
+        aiSend.click();
+      }
+    } else {
+      // Code mode - just put the text in input
+      aiInput.focus();
+    }
+  } else {
+    // If AI panel is not open, open it with the transcript
+    aiPanel.style.display = 'flex';
+    aiInput.value = transcript;
+    aiInput.focus();
+  }
+}
+
+voiceCommandBtn.addEventListener('click', () => {
+  if (!recognition) {
+    initVoiceRecognition();
+  }
+  
+  if (isListening) {
+    recognition.stop();
+  } else {
+    recognition.start();
+  }
+});
+
+mobileVoiceCommandBtn.addEventListener('click', () => {
+  if (!recognition) {
+    initVoiceRecognition();
+  }
+  
+  if (isListening) {
+    recognition.stop();
+  } else {
+    recognition.start();
+  }
+  mobileMenuDropdown.classList.remove('show');
+});
+
+// Drag and drop functionality
+document.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dragDropOverlay.classList.add('active');
+});
+
+document.addEventListener('dragleave', (e) => {
+  if (e.clientX <= 0 || e.clientY <= 0 || e.clientX >= window.innerWidth || e.clientY >= window.innerHeight) {
+    dragDropOverlay.classList.remove('active');
+  }
+});
+
+// Update the drag/drop functionality to handle images (around line 470)
+document.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dragDropOverlay.classList.remove('active');
+  
+  const droppedFiles = e.dataTransfer.files;
+  if (droppedFiles.length === 0) return;
+  
+  Array.from(droppedFiles).forEach(file => {
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (['html', 'css', 'js', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'bmp', 'ico', 'tiff'].includes(ext)) {
+      if (['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'bmp', 'ico', 'tiff'].includes(ext)) {
+        // Handle image files
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          const fileName = file.name.replace(/\.[^/.]+$/, "");
+          const fileContent = event.target.result;
+          
+          files.push({
+            name: fileName,
+            type: 'image',
+            code: fileContent, // Base64 encoded image
+            extension: ext
+          });
+          
+          saveFilesToStorage();
+          renderFiles();
+          showNotification(`Image "${fileName}.${ext}" imported successfully!`, 'success');
+        };
+        reader.readAsDataURL(file);
+      } else {
+        // Handle code files
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          const fileName = file.name.replace(/\.[^/.]+$/, "");
+          const fileContent = event.target.result;
+          
+          files.push({
+            name: fileName,
+            type: ext,
+            code: fileContent
+          });
+          
+          saveFilesToStorage();
+          renderFiles();
+          
+          if (files.length === 1) {
+            currentFile = 0;
+            editor.value = fileContent;
+            emptyState.style.display = 'none';
+            editor.style.display = 'block';
+            controls.style.display = 'flex';
+          }
+          
+          showNotification(`File "${fileName}.${ext}" imported successfully!`, 'success');
+        };
+        reader.readAsText(file);
+      }
+    } else {
+      showNotification('Only .html, .css, .js, and image files are allowed.', 'error');
+    }
+  });
+});
+
+// Share project functionality
+shareBtn.addEventListener('click', showShareModal);
+mobileShareBtn.addEventListener('click', showShareModal);
+
+function showShareModal() {
+  const projectData = btoa(JSON.stringify(files));
+  const shareLink = `${window.location.origin}${window.location.pathname}?project=${encodeURIComponent(projectData)}`;
+  shareUrl.textContent = shareLink;
+  shareModal.classList.add('active');
+}
+
+copyShareBtn.addEventListener('click', () => {
+  navigator.clipboard.writeText(shareUrl.textContent)
+    .then(() => {
+      showNotification('Link copied to clipboard!', 'success');
+    })
+    .catch(() => {
+      showNotification('Failed to copy link', 'error');
+    });
+});
+
+closeShareBtn.addEventListener('click', () => {
+  shareModal.classList.remove('active');
+});
+
+shareCloseBtn.addEventListener('click', () => {
+  shareModal.classList.remove('active');
+});
+
+// OpenRouter API Key Modal
+const apiKeyModal = document.getElementById('apiKeyModal');
+const apiKeyCloseBtn = document.getElementById('apiKeyCloseBtn');
+const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
+const cancelApiKeyBtn = document.getElementById('cancelApiKeyBtn');
+const openRouterApiKeyInput = document.getElementById('openRouterApiKey');
+
+// Check if API key exists on page load
+function checkApiKey() {
+  const savedApiKey = localStorage.getItem('openRouterApiKey');
+  if (!savedApiKey) {
+    // Show modal if no API key found
+    setTimeout(() => {
+      apiKeyModal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }, 2000);
+  }
+  return savedApiKey;
+}
+
+// Save API key
+saveApiKeyBtn.addEventListener('click', () => {
+  const apiKey = openRouterApiKeyInput.value.trim();
+  if (apiKey) {
+    localStorage.setItem('openRouterApiKey', apiKey);
+    apiKeyModal.classList.remove('active');
+    document.body.style.overflow = '';
+    showNotification('API key saved successfully!', 'success');
+  } else {
+    showNotification('Please enter a valid API key', 'error');
+  }
+});
+
+// Close modal handlers
+apiKeyCloseBtn.addEventListener('click', () => {
+  apiKeyModal.classList.remove('active');
+  document.body.style.overflow = '';
+});
+
+cancelApiKeyBtn.addEventListener('click', () => {
+  apiKeyModal.classList.remove('active');
+  document.body.style.overflow = '';
+});
+
+
+// Load shared project from URL
+function loadSharedProject() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const projectData = urlParams.get('project');
+  
+  if (projectData) {
+    try {
+      const decodedData = decodeURIComponent(projectData);
+      const sharedFiles = JSON.parse(atob(decodedData));
+      
+      if (Array.isArray(sharedFiles)) {
+        files = sharedFiles;
+        saveFilesToStorage();
+        renderFiles();
+        
+        if (files.length > 0) {
+          currentFile = 0;
+          editor.value = files[0].code;
+          emptyState.style.display = 'none';
+          editor.style.display = 'block';
+          controls.style.display = 'flex';
+        }
+        
+        showNotification('Project loaded successfully!', 'success');
+        
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    } catch (error) {
+      showNotification('Failed to load shared project', 'error');
+    }
+  }
+}
+
+// Update performance meter
+function updatePerformanceMeter() {
+  const loadEndTime = performance.now();
+  const totalLoadTime = Math.round(loadEndTime - loadStartTime);
+  loadTime.textContent = `${totalLoadTime}ms`;
+  
+  if (totalLoadTime < 100) {
+    performanceMeter.className = 'performance-meter good';
+  } else if (totalLoadTime < 500) {
+    performanceMeter.className = 'performance-meter warning';
+  } else {
+    performanceMeter.className = 'performance-meter bad';
+  }
+}
+
+mobileMenuBtn.addEventListener('click', (e) => {
+  e.stopPropagation(); // Prevent document click
+  mobileMenuDropdown.classList.toggle('show');
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+  if (!mobileMenuBtn.contains(e.target) && !mobileMenuDropdown.contains(e.target)) {
+    mobileMenuDropdown.classList.remove('show');
+  }
+});
+
+// Toggle Sidebar
+toggleSidebarBtn.addEventListener('click', () => {
+  sidebarEl.classList.toggle('show');
+});
+
+// Mobile Button Handlers
+document.getElementById('mobileCreateFileBtn').addEventListener('click', () => {
+  document.getElementById('createFileBtn').click();
+  mobileMenuDropdown.classList.remove('show');
+});
+document.getElementById('mobileImportFileBtn').addEventListener('click', () => {
+  document.getElementById('importFileBtn').click();
+  mobileMenuDropdown.classList.remove('show');
+});
+document.getElementById('mobileTogglePreviewBtn').addEventListener('click', () => {
+  document.getElementById('togglePreviewBtn').click();
+  mobileMenuDropdown.classList.remove('show');
+});
+document.getElementById('mobileExportZipBtn').addEventListener('click', () => {
+  document.getElementById('exportZipBtn').click();
+  mobileMenuDropdown.classList.remove('show');
+});
+document.getElementById('mobileAskAiBtn').addEventListener('click', () => {
+  document.getElementById('askAiBtn').click();
+  mobileMenuDropdown.classList.remove('show');
+});
+
+// Auto Refresh Toggle
+autoRefreshToggle.addEventListener('click', () => {
+  autoRefreshEnabled = !autoRefreshEnabled;
+  autoRefreshToggle.classList.toggle('active', autoRefreshEnabled);
+  
+  if (autoRefreshEnabled) {
+    autoRefreshToggle.innerHTML = '<i class="fa-solid fa-rotate"></i><span>Auto Refresh ON</span>';
+    refreshPreview();
+    showNotification('Auto Refresh enabled', 'success');
+  } else {
+    autoRefreshToggle.innerHTML = '<i class="fa-solid fa-rotate"></i><span>Auto Refresh OFF</span>';
+    if (refreshTimeout) {
+      clearTimeout(refreshTimeout);
+      refreshTimeout = null;
+    }
+    showNotification('Auto Refresh disabled', 'info');
+  }
+});
+
+// Manual Refresh Button
+refreshPreviewBtn.addEventListener('click', () => {
+  refreshPreview();
+  showNotification('Preview refreshed', 'info');
+});
+
+// Refresh Preview Function
+function refreshPreview() {
+  if (refreshTimeout) {
+    clearTimeout(refreshTimeout);
+    refreshTimeout = null;
+  }
+  
+  let htmlContent = '';
+  let cssContent = '';
+  let jsContent = '';
+  
+  files.forEach(f => {
+    if (f.type === 'html') htmlContent += f.code;
+    if (f.type === 'css') cssContent += f.code;
+    if (f.type === 'js') jsContent += f.code;
+  });
+  
+  // Create the final HTML document with images embedded
+  let finalHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <style>${cssContent}</style>
+    </head>
+    <body>
+      ${htmlContent}
+      <script>${jsContent}<\/script>
+    </body>
+    </html>
+  `;
+  
+  // Replace image references with actual base64 data URLs
+  files.forEach(f => {
+    if (f.type === 'image') {
+      const imageRef = `${f.name}.${f.extension}`;
+      const base64Data = f.code;
+      // Replace both filename.extension and filename (without extension) references
+      finalHtml = finalHtml.replace(new RegExp(imageRef, 'g'), base64Data);
+      finalHtml = finalHtml.replace(new RegExp(f.name, 'g'), base64Data);
+    }
+  });
+  
+  iframe.srcdoc = finalHtml;
+  
+  if (autoRefreshEnabled) {
+    refreshTimeout = setTimeout(refreshPreview, 500);
+  }
+}
+
+// Device Preview Functionality
+deviceToggle.addEventListener('click', (e) => {
+  e.stopPropagation();
+  deviceDropdown.classList.toggle('show');
+});
+
+deviceOptions.forEach(option => {
+  option.addEventListener('click', () => {
+    const device = option.getAttribute('data-device');
+    setDevicePreview(device);
+    deviceDropdown.classList.remove('show');
+  });
+});
+
+document.addEventListener('click', (e) => {
+  if (!deviceToggle.contains(e.target) && !deviceDropdown.contains(e.target)) {
+    deviceDropdown.classList.remove('show');
+  }
+});
+
+function setDevicePreview(device) {
+  currentDevice = device;
+  previewPanel.classList.remove('preview-desktop', 'preview-tablet', 'preview-mobile');
+  previewPanel.classList.add(`preview-${device}`);
+  
+  deviceOptions.forEach(opt => opt.classList.remove('active'));
+  document.querySelector(`.device-option[data-device="${device}"]`).classList.add('active');
+  
+  const deviceIcons = {
+    'desktop': 'fa-desktop',
+    'tablet': 'fa-tablet',
+    'mobile': 'fa-mobile'
+  };
+  
+  deviceToggle.innerHTML = `
+    <i class="fa-solid ${deviceIcons[device]}"></i>
+    <span>${device.charAt(0).toUpperCase() + device.slice(1)}</span>
+    <i class="fa-solid fa-chevron-down"></i>
+  `;
+}
+
+fullscreenBtn.addEventListener('click', () => {
+  if (!document.fullscreenElement) {
+    previewPanel.requestFullscreen().catch(err => alert(`Error: ${err.message}`));
+  } else {
+    document.exitFullscreen();
+  }
+});
+
+// Import file functionality
+importBtn.addEventListener('click', () => {
+  fileInput.click();
+});
+
+fileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!['html', 'css', 'js', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'bmp', 'ico', 'tiff'].includes(ext)) {
+    showNotification('Only .html, .css, .js, and image files (.png, .jpg, .jpeg, .gif, .svg, .webp, .bmp, .ico, .tiff) are allowed.', 'error');
+    return;
+  }
+  
+  if (['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'bmp', 'ico', 'tiff'].includes(ext)) {
+    // Handle image files
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      const fileName = file.name.replace(/\.[^/.]+$/, "");
+      const fileContent = event.target.result;
+      
+      files.push({
+        name: fileName,
+        type: 'image',
+        code: fileContent, // Base64 encoded image
+        extension: ext
+      });
+      
+      saveFilesToStorage();
+      renderFiles();
+      showNotification(`Image "${fileName}.${ext}" imported successfully!`, 'success');
+    };
+    reader.readAsDataURL(file);
+  } else {
+    // Handle code files
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      const fileName = file.name.replace(/\.[^/.]+$/, "");
+      const fileContent = event.target.result;
+      
+      files.push({
+        name: fileName,
+        type: ext,
+        code: fileContent
+      });
+      
+      saveFilesToStorage();
+      renderFiles();
+      
+      if (files.length === 1) {
+        currentFile = 0;
+        editor.value = fileContent;
+        emptyState.style.display = 'none';
+        editor.style.display = 'block';
+        controls.style.display = 'flex';
+      }
+      
+      showNotification(`File "${fileName}.${ext}" imported successfully!`, 'success');
+    };
+    reader.readAsText(file);
+  }
+});
+
+// Credit System
+let credits = 10;
+const creditsEl = document.getElementById('credits');
+const creditCounter = document.getElementById('creditCounter');
+
+function updateCreditsDisplay() {
+  creditsEl.textContent = credits.toFixed(1);
+  if (credits === 10) {
+    creditCounter.style.opacity = '0.6';
+  } else {
+    creditCounter.style.opacity = '1';
+  }
+}
+
+function checkCreditReset() {
+  const now = new Date();
+  const lastReset = localStorage.getItem('lastCreditReset');
+  
+  if (!lastReset) {
+    localStorage.setItem('lastCreditReset', now.toISOString());
+    credits = 10;
+    localStorage.setItem('aiCredits', '10');
+    updateCreditsDisplay();
+    return;
+  }
+
+  const lastResetDate = new Date(lastReset);
+  const nowGMT = new Date(now.toUTCString().substring(0, now.toUTCString().length - 3));
+  const lastResetGMT = new Date(lastResetDate.toUTCString().substring(0, lastResetDate.toUTCString().length - 3));
+  
+  const hoursDifference = (nowGMT - lastResetGMT) / (1000 * 60 * 60); 
+    if (hoursDifference >= 3) { // reset 3 hours
+    credits = 10;
+    localStorage.setItem('aiCredits', '10');
+    localStorage.setItem('lastCreditReset', now.toISOString());
+    updateCreditsDisplay();
+    showNotification('AI credits reset to 10', 'success');
+  } else {
+    const savedCredits = localStorage.getItem('aiCredits');
+    if (savedCredits) {
+      credits = parseFloat(savedCredits);
+      updateCreditsDisplay();
+    }
+  }
+}
+
+// Initialize credits
+const savedCredits = localStorage.getItem('aiCredits');
+if (savedCredits) {
+  credits = parseFloat(savedCredits);
+}
+updateCreditsDisplay();
+checkCreditReset();
+setInterval(checkCreditReset, 60000); // Check every minute
+
+// Local Storage for Files
+function saveFilesToStorage() {
+  localStorage.setItem('codePlaygroundFiles', JSON.stringify(files));
+}
+
+function loadFilesFromStorage() {
+  const savedFiles = localStorage.getItem('codePlaygroundFiles');
+  if (savedFiles) {
+    files = JSON.parse(savedFiles);
+    renderFiles();
+    if (files.length > 0) {
+      emptyState.style.display = 'none';
+      editor.style.display = 'block';
+      controls.style.display = 'flex';
+    }
+  }
+}
+
+// Render files
+function renderFiles(){
+  sidebarEl.querySelectorAll('.fileItem').forEach(el=>el.remove());
+  files.forEach((f,idx)=>{
+    const div = document.createElement('div');
+    div.className='templateItem fileItem';
+    
+    if (f.type === 'image') {
+      div.innerHTML=`<i class="fa-solid fa-image"></i><div class="tname">${f.name}.${f.extension}</div><i class="fa-solid fa-trash" style="margin-left:auto;cursor:pointer"></i>`;
+      div.querySelector('.tname').addEventListener('click', ()=>{ 
+        // Show image in preview when clicked
+        previewPanel.classList.remove('hidden');
+        editorPanel.classList.add('hidden');
+        toggleBtn.innerHTML='<i class="fa-solid fa-code"></i> Code';
+        
+        const imgHtml = `<div style="display:flex;justify-content:center;align-items:center;height:100%;background:#f8f9fa;"><img src="${f.code}" style="max-width:100%;max-height:100%;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);"></div>`;
+        iframe.srcdoc = imgHtml;
+        
+        showNotification(`Viewing image "${f.name}.${f.extension}"`, 'info');
+      });
+    } else {
+      div.innerHTML=`<i class="fa-solid fa-file-code"></i><div class="tname">${f.name}.${f.type}</div><i class="fa-solid fa-trash" style="margin-left:auto;cursor:pointer"></i>`;
+      div.querySelector('.tname').addEventListener('click', ()=>{ 
+        currentFile=idx; 
+        editor.value=f.code; 
+        emptyState.style.display='none'; 
+        editor.style.display='block'; 
+        controls.style.display='flex'; 
+        showNotification(`Switched to "${f.name}.${f.type}"`, 'info');
+      });
+    }
+    
+    div.querySelector('.fa-trash').addEventListener('click', e=>{ 
+      e.stopPropagation(); 
+      if(confirm('Delete this file?')){ 
+        files.splice(idx,1); 
+        saveFilesToStorage();
+        renderFiles(); 
+        if(currentFile===idx){editor.value='';currentFile=null; editor.style.display='none'; controls.style.display='none'; emptyState.style.display='flex';}
+        showNotification('File deleted', 'info');
+      }
+    });
+    sidebarEl.appendChild(div);
+  });
+}
+
+// Render files with modern interface
+function renderFiles(){
+  const fileList = document.getElementById('fileList');
+  fileList.innerHTML = '';
+  
+  if (files.length === 0) {
+    fileList.innerHTML = `
+      <div class="file-empty-state">
+        <i class="fa-solid fa-folder-open"></i>
+        <p>No files yet. Create your first file!</p>
+      </div>
+    `;
+    return;
+  }
+  
+  files.forEach((f,idx)=>{
+    const fileItem = document.createElement('div');
+    fileItem.className = `file-item ${currentFile === idx ? 'active' : ''}`;
+    
+    const fileSize = new Blob([f.code]).size;
+    const formattedSize = formatFileSize(fileSize);
+    const fileTypeIcon = getFileIconClass(f.type);
+    
+    fileItem.innerHTML = `
+      <div class="file-icon ${fileTypeIcon}">
+        <i class="${getFileIcon(f.type)}"></i>
+      </div>
+      <div class="file-info">
+        <div class="file-name">${f.name}.${f.type === 'image' ? f.extension : f.type}</div>
+        <div class="file-meta">${formattedSize} • ${f.type.toUpperCase()}</div>
+      </div>
+      <div class="file-actions">
+        <button class="file-action-btn" title="Rename"><i class="fa-solid fa-pen"></i></button>
+        <button class="file-action-btn delete" title="Delete"><i class="fa-solid fa-trash"></i></button>
+      </div>
+    `;
+    
+    // File click handler
+    fileItem.querySelector('.file-info').addEventListener('click', ()=>{ 
+      selectFile(idx);
+    });
+    
+    // Rename handler
+    fileItem.querySelector('.file-action-btn:not(.delete)').addEventListener('click', e=>{ 
+      e.stopPropagation();
+      renameFile(idx);
+    });
+    
+    // Delete handler
+    fileItem.querySelector('.file-action-btn.delete').addEventListener('click', e=>{ 
+      e.stopPropagation();
+      deleteFile(idx);
+    });
+    
+    fileList.appendChild(fileItem);
+  });
+}
+
+
+// Helper functions for file management
+function getFileIcon(type) {
+  const icons = {
+    'html': 'fa-brands fa-html5',
+    'css': 'fa-brands fa-css3-alt',
+    'js': 'fa-brands fa-js',
+    'image': 'fa-solid fa-image'
+  };
+  return icons[type] || 'fa-solid fa-file-code';
+}
+
+function getFileIconClass(type) {
+  return type;
+}
+
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  else return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+function selectFile(index) {
+  currentFile = index;
+  editor.value = files[index].code;
+  emptyState.style.display = 'none';
+  editor.style.display = 'block';
+  controls.style.display = 'flex';
+  
+  // Update active file highlight
+  document.querySelectorAll('.file-item').forEach(item => {
+    item.classList.remove('active');
+  });
+  document.querySelectorAll('.file-item')[index].classList.add('active');
+  
+  showNotification(`Switched to "${files[index].name}.${files[index].type}"`, 'info');
+}
+
+function renameFile(index) {
+  const newName = prompt('New file name:', files[index].name);
+  if(newName){ 
+    files[index].name = newName; 
+    saveFilesToStorage();
+    renderFiles(); 
+    showNotification('File renamed', 'success');
+  }
+}
+
+function deleteFile(index) {
+  if(confirm('Delete this file?')){ 
+    files.splice(index,1); 
+    saveFilesToStorage();
+    renderFiles(); 
+    if(currentFile === index){
+      editor.value='';
+      currentFile=null; 
+      editor.style.display='none'; 
+      controls.style.display='none'; 
+      emptyState.style.display='flex';
+    }
+    showNotification('File deleted', 'info');
+  }
+}
+
+// Update the file search functionality
+document.getElementById('fileSearchInput').addEventListener('input', function(e) {
+  const searchTerm = e.target.value.toLowerCase().trim();
+  const fileItems = document.querySelectorAll('.file-item');
+  
+  fileItems.forEach(item => {
+    const fileName = item.querySelector('.file-name').textContent.toLowerCase();
+    const fileMeta = item.querySelector('.file-meta').textContent.toLowerCase();
+    
+    if (fileName.includes(searchTerm) || fileMeta.includes(searchTerm)) {
+      item.style.display = 'flex';
+      item.style.animation = 'fadeIn 0.3s ease';
+    } else {
+      item.style.display = 'none';
+    }
+  });
+  
+  // Show empty state if no results
+  const visibleFiles = document.querySelectorAll('.file-item[style*="display: flex"]');
+  const emptyState = document.querySelector('.file-empty-state');
+  
+  if (visibleFiles.length === 0 && searchTerm !== '') {
+    if (!emptyState) {
+      const emptyDiv = document.createElement('div');
+      emptyDiv.className = 'file-empty-state';
+      emptyDiv.innerHTML = `
+        <i class="fa-solid fa-search"></i>
+        <p>No files found for "${searchTerm}"</p>
+      `;
+      document.getElementById('fileList').appendChild(emptyDiv);
+    }
+  } else if (emptyState) {
+    emptyState.remove();
+  }
+});
+
+// File sorting functionality
+document.getElementById('sortFilesBtn').addEventListener('click', () => {
+  files.sort((a, b) => a.name.localeCompare(b.name));
+  saveFilesToStorage();
+  renderFiles();
+  showNotification('Files sorted alphabetically', 'info');
+});
+
+// Create file
+document.getElementById('createFileBtn').addEventListener('click', ()=>{
+  const name = prompt('File name:'); 
+  if(!name) return;
+  const type = prompt('File type (html/css/js/image):','html');
+  if(!['html','css','js','image'].includes(type)) return showNotification('Unsupported file type', 'error');
+  
+  if (type === 'image') {
+    showNotification('Please import an image file instead of creating an empty one', 'info');
+    return;
+  }
+  
+  files.push({name,type,code:''});
+  saveFilesToStorage();
+  renderFiles();
+  emptyState.style.display='none';
+  editor.style.display='block';
+  controls.style.display='flex';
+  showNotification(`File "${name}.${type}" created`, 'success');
+});
+
+// Copy button functionality
+document.getElementById('copyBtn').addEventListener('click', ()=>{
+  if(currentFile!==null) {
+    navigator.clipboard.writeText(files[currentFile].code)
+      .then(() => {
+        showNotification('Code copied to clipboard!', 'success');
+      })
+      .catch(() => {
+        showNotification('Failed to copy code', 'error');
+      });
+  } else {
+    showNotification('No file selected', 'error');
+  }
+});
+
+// Clear editor
+document.getElementById('clearBtn').addEventListener('click', ()=>{
+  editor.value=''; 
+  if(currentFile!==null) {
+    files[currentFile].code='';
+    saveFilesToStorage();
+  }
+  showNotification('Editor cleared', 'info');
+});
+
+// Toggle Preview
+toggleBtn.addEventListener('click', ()=>{
+  const isPreview = previewPanel.classList.contains('hidden');
+  if(isPreview){
+    editorPanel.classList.add('hidden');
+    previewPanel.classList.remove('hidden');
+    refreshPreview();
+    toggleBtn.innerHTML='<i class="fa-solid fa-code"></i> Code';
+    setDevicePreview(currentDevice); // Apply current device preview
+    showNotification('Preview mode activated', 'info');
+  } else {
+    editorPanel.classList.remove('hidden');
+    previewPanel.classList.add('hidden');
+    toggleBtn.innerHTML='<i class="fa-solid fa-eye"></i> Preview';
+    if (refreshTimeout) {
+      clearTimeout(refreshTimeout);
+      refreshTimeout = null;
+    }
+    showNotification('Editor mode activated', 'info');
+  }
+});
+
+// Live update
+editor.addEventListener('input', ()=>{ 
+  if(currentFile!==null) {
+    files[currentFile].code=editor.value; 
+    saveFilesToStorage();
+    
+    if (autoRefreshEnabled && !previewPanel.classList.contains('hidden')) {
+      refreshPreview();
+    }
+  }
+});
+
+// Context menu
+sidebarEl.addEventListener('contextmenu', (e)=>{
+  e.preventDefault();
+  const targetItem = e.target.closest('.fileItem');
+  if(!targetItem) return contextMenu.style.display='none';
+  contextFileIndex = Array.from(sidebarEl.querySelectorAll('.fileItem')).indexOf(targetItem);
+  contextMenu.style.top = e.pageY + 'px';
+  contextMenu.style.left = e.pageX + 'px';
+  contextMenu.style.display='block';
+});
+document.addEventListener('click', ()=> contextMenu.style.display='none');
+
+// Undo
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key === 'z') { // Ctrl + Z
+    e.preventDefault();
+    document.execCommand('undo');
+  }
+});
+
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key === 'Enter') {
+    e.preventDefault();
+    if (!previewPanel.classList.contains('hidden')) {
+      // If already in preview mode, refresh it
+      refreshPreview();
+      showNotification('Preview refreshed', 'info');
+    } else {
+      // Switch to preview mode
+      toggleBtn.click();
+    }
+  }
+});
+
+// Redo
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key === 'y') { // Ctrl + Y
+    e.preventDefault();
+    document.execCommand('redo');
+  }
+});
+
+// Save with Ctrl+M
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key === 'm') { // Ctrl + M
+    e.preventDefault();
+    saveFilesToStorage();
+    showNotification('Files saved manually', 'success');
+  }
+});
+
+// Rename
+document.getElementById('renameFile').addEventListener('click', ()=>{
+  if(contextFileIndex===null) return;
+  const newName = prompt('New file name:', files[contextFileIndex].name);
+  if(newName){ 
+    files[contextFileIndex].name=newName; 
+    saveFilesToStorage();
+    renderFiles(); 
+    showNotification('File renamed', 'success');
+  }
+  contextMenu.style.display='none';
+});
+
+// Duplicate
+document.getElementById('duplicateFile').addEventListener('click', ()=>{
+  if(contextFileIndex===null) return;
+  const f = files[contextFileIndex];
+  files.push({name:f.name+'_copy', type:f.type, code:f.code});
+  saveFilesToStorage();
+  renderFiles();
+  showNotification('File duplicated', 'success');
+  contextMenu.style.display='none';
+});
+
+// Export ZIP
+exportBtn.addEventListener('click', ()=>{
+  if(files.length===0) return showNotification('No files to export', 'error');
+  const zip = new JSZip();
+  files.forEach(f=> zip.file(`${f.name}.${f.type}`, f.code));
+  zip.generateAsync({type:"blob"}).then(content=>{
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(content);
+    a.download = 'project.zip';
+    a.click();
+    showNotification('Project exported as ZIP', 'success');
+  });
+});
+
+// Load files from storage on page load
+loadFilesFromStorage();
+loadSharedProject();
+updatePerformanceMeter();
+startAutoSave(); // Start auto-save interval
+
+// ---------------- AI Assistant - Redesigned ----------------
+const aiBtn = document.getElementById('askAiBtn');
+const aiPanel = document.getElementById('aiAssistant');
+const aiClose = document.getElementById('closeAiBtn');
+const aiMinimize = document.getElementById('minimizeAiBtn');
+const aiFullscreen = document.getElementById('fullscreenAiBtn');
+const aiInput = document.getElementById('aiInput');
+const aiChat = document.getElementById('aiChat');
+const aiSend = document.getElementById('sendAiBtn');
+const stopAiBtn = document.getElementById('stopAiBtn');
+const chatModeBtn = document.getElementById('chatModeBtn');
+let isMinimized = false;
+let isFullscreen = false;
+let chatMode = false;
+let isGenerating = false;
+let typingInterval = null;
+let currentModel = "deepseek/deepseek-chat-v3.1:free";
+
+
+// Toggle chat mode
+chatModeBtn.addEventListener('click', () => {
+  chatMode = !chatMode;
+  if (chatMode) {
+    chatModeBtn.innerHTML = '<i class="fa-solid fa-code"></i> Code Mode';
+    chatModeBtn.style.background = 'rgba(34,197,94,0.2)';
+    chatModeBtn.style.color = 'var(--accent)';
+    aiInput.placeholder = "Chat with AI assistant...";
+    showNotification('Chat mode activated', 'info');
+  } else {
+    chatModeBtn.innerHTML = '<i class="fa-solid fa-comment"></i> Chat Mode';
+    chatModeBtn.style.background = 'none';
+    chatModeBtn.style.color = 'var(--muted)';
+    aiInput.placeholder = "Ask something about your code...";
+    showNotification('Code mode activated', 'info');
+  }
+});
+
+aiBtn.addEventListener('click', ()=> {
+  aiPanel.style.display='flex';
+  aiInput.focus();
+});
+aiClose.addEventListener('click', ()=> aiPanel.style.display='none');
+
+// Update mobile event listeners to only trigger on minimize button click
+aiMinimize.addEventListener('click', (e) => {
+  e.stopPropagation();
+  isMinimized = !isMinimized;
+
+  if (isMinimized) {
+    aiPanel.classList.add('minimized');
+    aiMinimize.innerHTML = '<i class="fa-solid fa-maximize"></i>';
+    aiChat.style.display = 'none';
+    aiInput.style.display = 'none';
+    aiSend.style.display = 'none';
+    stopAiBtn.style.display = 'none';
+    chatModeBtn.style.display = 'none';
+    aiFullscreen.style.display = 'none';
+    aiClose.style.display = 'none';
+    document.getElementById('modelSelectorBtn').style.display = 'none';
+    
+    // Hide model selector if open
+    document.getElementById('aiModelSelector').classList.remove('show');
+  } else {
+    maximizePanel();
+    document.getElementById('modelSelectorBtn').style.display = 'block';
+  }
+});
+
+// Attach ONCE (for both desktop + mobile)
+aiPanel.querySelector('header').removeEventListener('click', maximizeFromMinimized);
+aiPanel.querySelector('header').removeEventListener('touchstart', maximizeFromMinimized);
+
+// Add new listeners that only work when not minimized
+aiPanel.querySelector('header').addEventListener('click', function(e) {
+  if (!isMinimized && !e.target.closest('.controls')) {
+    // Handle regular header clicks if needed
+  }
+});
+
+
+
+function maximizePanel() {
+  aiPanel.classList.remove('minimized');
+  aiMinimize.innerHTML = '<i class="fa-solid fa-minus"></i>';
+  aiChat.style.display = 'flex';
+  aiInput.style.display = 'block';
+  aiSend.style.display = 'block';
+  stopAiBtn.style.display = 'none';
+  chatModeBtn.style.display = 'block';
+  aiFullscreen.style.display = 'block';
+  aiClose.style.display = 'block';
+}
+
+function maximizeFromMinimized(e) {
+  // Only if minimized AND clicking directly on the header (not controls)
+  if (isMinimized && e.target.closest('header') && !e.target.closest('.controls')) {
+    maximizePanel();
+  }
+}
+
+
+aiFullscreen.addEventListener('click', ()=>{
+  isFullscreen = !isFullscreen;
+  if(isFullscreen){
+    aiPanel.classList.add('fullscreen');
+    aiFullscreen.innerHTML = '<i class="fa-solid fa-compress"></i>';
+  } else {
+    aiPanel.classList.remove('fullscreen');
+    aiFullscreen.innerHTML = '<i class="fa-solid fa-expand"></i>';
+  }
+});
+
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Escape' && isFullscreen){
+    aiPanel.classList.remove('fullscreen');
+    aiFullscreen.innerHTML = '<i class="fa-solid fa-expand"></i>';
+    isFullscreen = false;
+  }
+});
+
+function setupModelSelector() {
+  const modelOptions = document.querySelectorAll('.model-option');
+  
+  modelOptions.forEach(option => {
+    option.addEventListener('click', () => {
+      const model = option.getAttribute('data-model');
+      currentModel = model;
+      
+      // Update active state
+      modelOptions.forEach(opt => opt.classList.remove('active'));
+      option.classList.add('active');
+      
+      showNotification(`AI model changed to ${model.split('/')[1]}`, 'success');
+    });
+  });
+}
+
+// Stop generating function
+stopAiBtn.addEventListener('click', () => {
+  if (isGenerating) {
+    isGenerating = false;
+    if (typingInterval) {
+      clearInterval(typingInterval);
+      typingInterval = null;
+    }
+    stopAiBtn.style.display = 'none';
+    aiSend.disabled = false;
+    showNotification('Generation stopped', 'info');
+  }
+});
+
+aiSend.addEventListener('click', async ()=>{
+  const q = aiInput.value.trim();
+  if(!q) return;
+
+  const creditCost = chatMode ? 0.5 : 1;
+  if (credits < creditCost) {
+    addMessage('You have no credits left. Credits reset every 3 hours.', 'error');
+    return;
+  }
+
+  aiInput.value='';
+  aiSend.disabled = true;
+  stopAiBtn.style.display = 'block';
+  isGenerating = true;
+
+  addMessage(q, 'user');
+  
+  const typingIndicator = document.createElement('div');
+  typingIndicator.className = 'ai-typing-indicator';
+  typingIndicator.innerHTML = `
+    <div class="ai-typing-dot"></div>
+    <div class="ai-typing-dot"></div>
+    <div class="ai-typing-dot"></div>
+  `;
+  aiChat.appendChild(typingIndicator);
+  aiChat.scrollTop = aiChat.scrollHeight;
+
+  try {
+    let systemPrompt = `
+You are a professional senior web developer AI.
+Your job is to generate ONLY clean, valid, and optimized HTML, CSS, or JS code.
+
+STRICT RULES:
+- If the file already contains code, MODIFY the existing code directly.
+- Do NOT create a new file or rewrite everything unless strictly necessary.
+- Do NOT include explanations, comments, or extra text unless explicitly asked.
+- Always validate and format the code before sending.
+- Use modern best practices (HTML5, CSS3, ES6+).
+- Respond ONLY with the exact code changes required.
+- Ensure proper indentation and syntax highlighting compatibility.
+`;
+
+    let userPrompt = `
+Current file content:
+
+${files[currentFile]?.code || ""}
+
+Task: Apply ONLY the requested modifications to the existing code.
+Do NOT create a new file or rewrite unrelated parts.
+My request: ${q}
+`;
+
+    if (chatMode) {
+systemPrompt = `
+You are a helpful AI assistant for the NeoBuilder.
+Provide friendly, informative responses about coding, web development, and the playground features.
+Use Markdown formatting in your responses:
+- Use ***text*** for bold italics
+- Use **text** for bold
+- Use *text* for italic
+- Use # to ###### for headers
+- Use - for lists
+- Use \`\`\` for code blocks
+Keep responses concise and helpful.
+
+If someone asks who the CEO or leader is, always answer: "Mohamed Aboulbakar".
+`;
+      userPrompt = q;
+    }
+
+// Enhanced context awareness
+const websiteContext = `
+Current Website Context:
+- Files: ${files.map(f => `${f.name}.${f.type}`).join(', ')}
+- Current file: ${files[currentFile]?.name || 'None'}.${files[currentFile]?.type || ''} 
+- Preview URL: ${iframe.src || 'data:text/html,' + encodeURIComponent(iframe.srcdoc)}
+- Editor content: ${editor.value}
+- User credits: ${credits}
+`;
+
+const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+  method: "POST",
+  headers: {
+    "Authorization": `Bearer ${localStorage.getItem('openRouterApiKey') || 'OpenRouter APIkey'}`,
+    "Content-Type": "application/json",
+    "HTTP-Referer": window.location.origin,
+    "X-Title": "Live Code Playground"
+  },
+  body: JSON.stringify({
+    model: currentModel,
+    messages: [
+      {
+        role: "system",
+        content: systemPrompt + websiteContext
+      },
+      {
+        role: "user",
+        content: userPrompt
+      }
+    ]
+  })
+});
+
+
+    if (!isGenerating) {
+      typingIndicator.remove();
+      stopAiBtn.style.display = 'none';
+      aiSend.disabled = false;
+      return;
+    }
+
+    const data = await res.json();
+    const answer = data.choices?.[0]?.message?.content || "";
+
+    typingIndicator.remove();
+
+    credits -= creditCost;
+    localStorage.setItem('aiCredits', credits.toString());
+    updateCreditsDisplay();
+
+    if (chatMode) {
+      addMessage(answer, 'assistant');
+      stopAiBtn.style.display = 'none';
+      aiSend.disabled = false;
+      isGenerating = false;
+    } else {
+      const cleanAnswer = answer.replace(/</g,'<')
+                                .replace(/>/g,'>')
+                                .replace(/&/g,'&');
+
+      addMessage('I\'ve added the code to your file ✅', 'assistant');
+
+      let i = 0;
+      function typeCode(){
+        if(i < cleanAnswer.length && isGenerating){
+          const prevValue = editor.value;
+          editor.value += cleanAnswer[i];
+          files[currentFile].code += cleanAnswer[i];
+          
+          editor.scrollTop = editor.scrollHeight;
+
+          if(cleanAnswer[i] === "\n"){
+            const start = editor.value.lastIndexOf("\n") + 1;
+            const end = editor.value.length;
+            editor.focus();
+            editor.setSelectionRange(start, end);
+            document.execCommand('backColor', false, 'rgba(34,197,94,0.3)');
+            setTimeout(()=> editor.setSelectionRange(end, end), 800);
+          }
+
+          i++;
+          typingInterval = setTimeout(typeCode, 1); // Changed from 3ms to 1ms for faster typing
+        } else {
+          saveFilesToStorage();
+          stopAiBtn.style.display = 'none';
+          aiSend.disabled = false;
+          isGenerating = false;
+          if (typingInterval) {
+            clearTimeout(typingInterval);
+            typingInterval = null;
+          }
+        }
+      }
+      typeCode();
+    }
+
+  } catch(err){
+    typingIndicator.remove();
+    addMessage(`Error: ${err.message}`, 'error');
+    stopAiBtn.style.display = 'none';
+    aiSend.disabled = false;
+    isGenerating = false;
+  }
+});
+
+function addMessage(text, type) {
+  const msg = document.createElement('div');
+  msg.className = `ai-message ${type}`;
+  
+  if (type === 'assistant' && chatMode) {
+    msg.innerHTML = formatMarkdown(text);
+  } else {
+    msg.textContent = text;
+  }
+  
+  aiChat.appendChild(msg);
+  aiChat.scrollTop = aiChat.scrollHeight;
+}
+
+// Add API key check when AI button is clicked
+aiBtn.addEventListener('click', ()=> {
+  const apiKey = localStorage.getItem('openRouterApiKey');
+  if (!apiKey) {
+    apiKeyModal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    return;
+  }
+  aiPanel.style.display='flex';
+  aiInput.focus();
+});
+
+function copyCodeToClipboard(button) {
+  const codeElement = button.parentElement.querySelector('code');
+  const codeText = codeElement.textContent;
+  
+  navigator.clipboard.writeText(codeText)
+    .then(() => {
+      const originalText = button.innerHTML;
+      button.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+      button.style.background = 'rgba(34,197,94,0.3)';
+      
+      setTimeout(() => {
+        button.innerHTML = originalText;
+        button.style.background = '';
+      }, 2000);
+      
+      showNotification('Code copied to clipboard', 'success');
+    })
+    .catch(() => {
+      showNotification('Failed to copy code', 'error');
+    });
+}
+
+function formatMarkdown(text) {
+  let formattedText = text
+    // Replace newlines with <br> tags
+    .replace(/\n/g, '<br>')
+    
+    // Bold / Italic
+    .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    
+    // Headers
+    .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+    .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+    .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+    .replace(/^#### (.*$)/gm, '<h4>$1</h4>')
+    .replace(/^##### (.*$)/gm, '<h5>$1</h5>')
+    .replace(/^###### (.*$)/gm, '<h6>$1</h6>')
+    
+    // Lists
+    .replace(/^- (.*$)/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/g, '<ul>$1</ul>')
+   
+    // Code blocks - add copy button
+    .replace(/```([\s\S]*?)```/g, function(match, codeContent) {
+      return `<pre><code>${codeContent}</code><button class="copy-code-btn" onclick="copyCodeToClipboard(this)"><i class="fa-solid fa-copy"></i> Copy</button></pre>`;
+    })
+    
+    // Tables
+    .replace(/((\|.+\|)\n(\|[-| :]+\|)\n((\|.*\|\n?)+))/g, function(match, p1) {
+      const lines = p1.trim().split('\n');
+      const headerCells = lines[0].split('|').slice(1, -1).map(cell => '<th>' + cell.trim() + '</th>');
+      const rows = lines.slice(2).map(line => {
+        const cells = line.split('|').slice(1, -1).map(cell => '<td>' + cell.trim() + '</td>');
+        return '<tr>' + cells.join('') + '</tr>';
+      });
+      return '<table border="1"><thead><tr>' + headerCells.join('') + '</tr></thead><tbody>' + rows.join('') + '</tbody></table>';
+    })
+    
+    // Emoji reactions 
+    .replace(/:\)|:-\)/g, '😊')
+    .replace(/:\(|:-\(/g, '😢')
+    .replace(/:D|:-D/g, '😄')
+    .replace(/;\)|;-\)/g, '😉')
+    .replace(/:\||:-\|/g, '😐')
+    .replace(/:o|:-o|:O|:-O/g, '😮')
+    .replace(/:P|:-P/g, '😛')
+    .replace(/<3/g, '❤️')
+    .replace(/:\/|:-\//g, '😕');
+    
+  return formattedText;
+}
+
+aiInput.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    aiSend.click();
+  }
+});
+
+
+// ---------------- Draggable AI Assistant ----------------
+let isDragging = false;
+let offsetX = 0;
+let offsetY = 0;
+
+// Prevent default context menu on the panel
+aiPanel.addEventListener('contextmenu', (e) => e.preventDefault());
+
+// Helper: check if element is draggable (ignore inputs/buttons)
+function isDraggableTarget(target) {
+  return !['BUTTON', 'INPUT', 'TEXTAREA', 'SELECT', 'LABEL'].includes(target.tagName);
+}
+
+// ----------- Mouse Events (Right Click) -----------
+aiPanel.addEventListener('mousedown', (e) => {
+  if (e.button !== 2) return; // Only right click
+  if (!isDraggableTarget(e.target)) return; // Ignore clicks on buttons/inputs
+  isDragging = true;
+  offsetX = e.clientX - aiPanel.getBoundingClientRect().left;
+  offsetY = e.clientY - aiPanel.getBoundingClientRect().top;
+});
+
+document.addEventListener('mousemove', (e) => {
+  if (!isDragging) return;
+  movePanel(e.clientX, e.clientY);
+});
+
+document.addEventListener('mouseup', (e) => {
+  if (e.button === 2) isDragging = false;
+});
+
+// ----------- Touch Events -----------
+aiPanel.addEventListener('touchstart', (e) => {
+  if (!isDraggableTarget(e.target)) return; // Ignore touches on buttons/inputs
+  isDragging = true;
+  const touch = e.touches[0];
+  offsetX = touch.clientX - aiPanel.getBoundingClientRect().left;
+  offsetY = touch.clientY - aiPanel.getBoundingClientRect().top;
+
+  // Prevent page scrolling only if dragging
+  e.preventDefault();
+}, { passive: false });
+
+document.addEventListener('touchmove', (e) => {
+  if (!isDragging) return;
+  const touch = e.touches[0];
+  movePanel(touch.clientX, touch.clientY);
+
+  // Prevent page scrolling while dragging
+  e.preventDefault();
+}, { passive: false });
+
+document.addEventListener('touchend', () => {
+  isDragging = false;
+});
+
+// Enhanced model selector toggle for mobile
+document.getElementById('modelSelectorBtn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  const selector = document.getElementById('aiModelSelector');
+  const isMobile = window.innerWidth <= 768;
+  
+  if (isMobile) {
+    selector.classList.toggle('show');
+    // Close other dropdowns if open
+    document.getElementById('deviceDropdown').classList.remove('show');
+    document.getElementById('mobileMenuDropdown').classList.remove('show');
+  } else {
+    selector.classList.toggle('show');
+  }
+});
+
+// Close model selector when clicking outside on mobile
+document.addEventListener('click', (e) => {
+  const selector = document.getElementById('aiModelSelector');
+  const isMobile = window.innerWidth <= 768;
+  
+  if (isMobile && selector.classList.contains('show') && 
+      !e.target.closest('#aiModelSelector') && 
+      !e.target.closest('#modelSelectorBtn')) {
+    selector.classList.remove('show');
+  }
+});
+
+// Close model selector when clicking outside
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#aiModelSelector') && !e.target.closest('#modelSelectorBtn')) {
+    document.getElementById('aiModelSelector').classList.remove('show');
+  }
+});
+
+// ----------- Move Function -----------
+function movePanel(clientX, clientY) {
+  const maxX = window.innerWidth - aiPanel.offsetWidth;
+  const maxY = window.innerHeight - aiPanel.offsetHeight;
+
+  let x = clientX - offsetX;
+  let y = clientY - offsetY;
+
+  // Keep it inside the viewport
+  x = Math.max(0, Math.min(x, maxX));
+  y = Math.max(0, Math.min(y, maxY));
+
+  aiPanel.style.left = x + 'px';
+  aiPanel.style.top = y + 'px';
+}
+
+// ---------------- Custom Viewport Controls ----------------
+function addCustomViewportControls() {
+  const previewTop = document.querySelector('.previewTop');
+
+  // Create container for custom inputs (hidden by default)
+  const customViewport = document.createElement('div');
+  customViewport.className = 'custom-viewport';
+  customViewport.style.display = 'none'; // hide initially
+  customViewport.innerHTML = `
+    <span>Custom:</span>
+    <input type="number" id="viewportWidth" placeholder="Width" min="100" max="2000">
+    <span>x</span>
+    <input type="number" id="viewportHeight" placeholder="Height" min="100" max="2000">
+    <button id="applyViewport">Apply</button>
+  `;
+
+  previewTop.appendChild(customViewport);
+
+  const livePreviewBtn = document.createElement('button');
+  livePreviewBtn.id = 'livePreviewBtn';
+  livePreviewBtn.className = 'btn secondary';
+  livePreviewBtn.innerHTML = '<i class="fa-solid fa-external-link-alt"></i> Live Preview';
+  previewTop.appendChild(livePreviewBtn);
+
+
+  // Apply custom viewport
+  document.getElementById('applyViewport').addEventListener('click', () => {
+    const width = document.getElementById('viewportWidth').value;
+    const height = document.getElementById('viewportHeight').value;
+
+    if (width && height) {
+      setCustomViewport(parseInt(width), parseInt(height));
+      showNotification(`Viewport set to ${width}x${height}`, 'success');
+    }
+  });
+
+// Add this event listener after the previewTop is defined
+livePreviewBtn.addEventListener('click', () => {
+  const htmlContent = files.find(f => f.type === 'html')?.code || '';
+  const cssContent = files.find(f => f.type === 'css')?.code || '';
+  const jsContent = files.find(f => f.type === 'js')?.code || '';
+  
+  const fullHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <style>${cssContent}</style>
+    </head>
+    <body>
+      ${htmlContent}
+      <script>${jsContent}<\/script>
+    </body>
+    </html>
+  `;
+  
+  const blob = new Blob([fullHtml], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  
+  window.open(url, 'preview--createdwebsitename-neo-builder.netlify.app');
+});
+
+  // Update device dropdown to include custom option
+  const customOption = document.createElement('div');
+  customOption.className = 'device-option';
+  customOption.setAttribute('data-device', 'custom');
+  customOption.innerHTML = '<i class="fa-solid fa-ruler-combined"></i> Custom';
+  deviceDropdown.appendChild(customOption);
+
+  // Event listener for custom option
+  customOption.addEventListener('click', () => {
+    customViewport.style.display = 'flex'; // show custom inputs
+    deviceDropdown.classList.remove('show');
+    currentDevice = 'custom';
+  });
+
+  // Hide custom viewport and reset preview for mobile/tablet/desktop
+  const standardOptions = document.querySelectorAll('.device-option:not([data-device="custom"])');
+  standardOptions.forEach(option => {
+    option.addEventListener('click', () => {
+      customViewport.style.display = 'none'; // hide custom inputs
+
+      const device = option.getAttribute('data-device');
+      previewPanel.classList.remove('preview-desktop', 'preview-tablet', 'preview-mobile');
+
+      const previewWindow = document.querySelector('.previewWindow');
+      if (device === 'desktop') {
+        previewPanel.classList.add('preview-desktop');
+        previewWindow.style.width = '100%';
+        previewWindow.style.height = '100%';
+        previewWindow.style.margin = '0';
+      } else if (device === 'tablet') {
+        previewPanel.classList.add('preview-tablet');
+        previewWindow.style.width = '768px';
+        previewWindow.style.height = '1024px';
+        previewWindow.style.margin = '0 auto';
+      } else if (device === 'mobile') {
+        previewPanel.classList.add('preview-mobile');
+        previewWindow.style.width = '375px';
+        previewWindow.style.height = '667px';
+        previewWindow.style.margin = '0 auto';
+      }
+
+      // Update device toggle text
+      deviceToggle.innerHTML = option.innerHTML;
+      currentDevice = device;
+      deviceDropdown.classList.remove('show');
+    });
+  });
+}
+
+function setCustomViewport(width, height) {
+  previewPanel.classList.remove('preview-desktop', 'preview-tablet', 'preview-mobile');
+
+  const previewWindow = document.querySelector('.previewWindow');
+  previewWindow.style.width = `${width}px`;
+  previewWindow.style.height = `${height}px`;
+  previewWindow.style.margin = '0 auto';
+
+  deviceToggle.innerHTML = `
+    <i class="fa-solid fa-ruler-combined"></i>
+    <span>Custom ${width}x${height}</span>
+    <i class="fa-solid fa-chevron-down"></i>
+  `;
+}
+
+// Initialize controls
+addCustomViewportControls();
+
+// Fix AI Assistant initial state
+document.addEventListener('DOMContentLoaded', function() {
+    checkApiKey();
+  // Ensure AI panel is hidden on page load
+  const aiPanel = document.getElementById('aiAssistant');
+  if (aiPanel) {
+    aiPanel.style.display = 'none';
+  }
+  setupModelSelector();
+// Enhanced responsive behavior
+function handleResponsiveDesign() {
+  const isMobile = window.innerWidth <= 900;
+  const aiPanel = document.getElementById('aiAssistant');
+  
+  if (isMobile && aiPanel.style.display === 'flex') {
+    // Adjust AI panel position for mobile
+    aiPanel.style.width = '90%';
+    aiPanel.style.right = '5%';
+    aiPanel.style.left = '5%';
+    aiPanel.style.bottom = '20px';
+    aiPanel.style.position = 'fixed';
+  } else if (!isMobile) {
+    // Reset styles for desktop
+    aiPanel.style.width = '';
+    aiPanel.style.right = '';
+    aiPanel.style.left = '';
+    aiPanel.style.bottom = '';
+    aiPanel.style.position = '';
+  }
+}
+  
+  // Initial call
+  handleResponsiveDesign();
+  
+  // Listen for resize events
+  window.addEventListener('resize', handleResponsiveDesign);
+});
+
+// ------------------- Offline Support -------------------
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('Service Worker registered:', reg.scope))
+      .catch(err => console.log('Service Worker registration failed:', err));
+  });
+}
+
+// Notify user when offline
+window.addEventListener('offline', () => {
+  showNotification('You are now offline. You can still edit files.', 'info');
+});
+
+window.addEventListener('online', () => {
+  showNotification('You are back online.', 'success');
+});
+
+
+// hi review the current code and add that the user can use the website even if he is offline. add this and say to me where i will put the added code and if its an update to a code right the full code with updated think 
+
+</script>
+</body>
+</html>
+
+
+
