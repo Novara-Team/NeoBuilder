@@ -30,6 +30,52 @@ body{
   color:#e6eef6; background:linear-gradient(180deg,var(--bg),#071019 160%);
   min-height:100vh; display:flex; flex-direction:column;
 }
+
+[data-theme="light"] {
+  --bg:#f8fafc; --panel:#ffffff; --card:#f1f5f9; --accent:#3b82f6;
+  --muted:#64748b; --glass:rgba(0,0,0,0.03);
+  color: #1e293b;
+}
+
+[data-theme="light"] .topbar {
+  background: linear-gradient(90deg, rgba(0,0,0,0.02), transparent);
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+[data-theme="light"] .btn.secondary {
+  background: rgba(0,0,0,0.05);
+  color: var(--muted);
+  border: 1px solid rgba(0,0,0,0.08);
+}
+
+[data-theme="light"] #sidebar,
+[data-theme="light"] .editorCard,
+[data-theme="light"] .previewCard {
+  background: linear-gradient(180deg, rgba(0,0,0,0.01), rgba(0,0,0,0.008));
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+[data-theme="light"] textarea#codeEditor {
+  background: #f8fafc;
+  color: #1e293b;
+  border: 1px solid rgba(0,0,0,0.08);
+}
+
+[data-theme="light"] .file-item {
+  background: rgba(0,0,0,0.03);
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+[data-theme="light"] .file-item:hover {
+  background: rgba(0,0,0,0.05);
+  border-color: rgba(0,0,0,0.1);
+}
+
+[data-theme="light"] .file-item.active {
+  background: rgba(59,130,246,0.12);
+  border-color: rgba(59,130,246,0.3);
+}
+
 /* Loading Screen */
 #loadingScreen {
   position: fixed;
@@ -744,8 +790,55 @@ iframe#iframePreview{width:100%;height:100%;border:0; display:block; border-radi
   transition: all 0.35s ease;
   font-family: "Inter", "Segoe UI", sans-serif;
   z-index: 99999 !important;
+  transform: translateY(100px);
+  opacity: 0;
+  transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+              opacity 0.5s ease,
+              width 0.4s ease,
+              height 0.4s ease,
+              border-radius 0.4s ease;
 }
 
+#aiAssistant.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+#aiAssistant.minimized {
+  transform: scale(0.95) translateY(20px);
+  opacity: 0.9;
+}
+
+#aiAssistant.minimized.show {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+}
+
+#aiAssistant.fullscreen {
+  transform: scale(0.95);
+  opacity: 0;
+}
+
+#aiAssistant.fullscreen.show {
+  transform: scale(1);
+  opacity: 1;
+}
+
+#aiAssistant {
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Add micro-interaction for minimize/maximize */
+@keyframes subtlePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+#aiAssistant.minimized:hover {
+  animation: subtlePulse 2s ease-in-out infinite;
+}
 
 #aiAssistant.minimized {
   height: 64px;
@@ -2069,6 +2162,39 @@ iframe#iframePreview{width:100%;height:100%;border:0; display:block; border-radi
     padding: 10px 14px;
     font-size: 12px;
   }
+  .previewTop {
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-start;
+  }
+  
+  .device-toggle, .auto-refresh-toggle, .refresh-btn, #livePreviewBtn {
+    font-size: 11px;
+    padding: 5px 8px;
+    flex: 1;
+    min-width: auto;
+    justify-content: center;
+  }
+  
+  .device-toggle span, .auto-refresh-toggle span, .refresh-btn span {
+    display: none;
+  }
+  
+  .device-toggle i, .auto-refresh-toggle i, .refresh-btn i {
+    margin-right: 0;
+  }
+  
+  .credit-counter {
+    margin-left: 5px;
+    font-size: 11px;
+  }
+  
+  .inbox-badge {
+    top: -3px;
+    right: -3px;
+    width: 6px;
+    height: 6px;
+  }
 }
 
 @media (max-width: 390px) {
@@ -2110,6 +2236,20 @@ iframe#iframePreview{width:100%;height:100%;border:0; display:block; border-radi
   
   #chatModeBtn i {
     display: block; /* Show only icon */
+  }
+  .previewTop {
+    padding: 6px;
+    gap: 4px;
+  }
+  
+  .device-toggle, .auto-refresh-toggle, .refresh-btn, #livePreviewBtn {
+    font-size: 10px;
+    padding: 4px 6px;
+  }
+  
+  .credit-counter {
+    font-size: 10px;
+    margin-left: 3px;
   }
 }
 
@@ -2192,6 +2332,18 @@ iframe#iframePreview{width:100%;height:100%;border:0; display:block; border-radi
   
   .previewWindow {
     height: 450px;
+  }
+  .previewTop {
+    gap: 3px;
+  }
+  
+  .device-toggle, .auto-refresh-toggle, .refresh-btn, #livePreviewBtn {
+    font-size: 9px;
+    padding: 3px 5px;
+  }
+  
+  .credit-counter {
+    font-size: 9px;
   }
 }
 
@@ -2372,6 +2524,7 @@ iframe#iframePreview{width:100%;height:100%;border:0; display:block; border-radi
     <div class="file-manager-header">
       <h3>Files</h3>
       <div class="file-manager-actions">
+        <button id="createFolderBtn" title="Create new folder"><i class="fa-solid fa-folder-plus"></i></button>
         <button id="createFileBtn" title="Create new file"><i class="fa-solid fa-file-circle-plus"></i></button>
         <button id="sortFilesBtn" title="Sort files"><i class="fa-solid fa-sort"></i></button>
         <button id="collapseFilesBtn" title="Collapse all"><i class="fa-solid fa-minimize"></i></button>
@@ -2642,6 +2795,51 @@ const autoRefreshToggle = document.getElementById('autoRefreshToggle');
 const refreshPreviewBtn = document.getElementById('refreshPreviewBtn');
 let autoRefreshEnabled = false;
 let refreshTimeout = null;
+
+// Add this function to handle AI panel animations
+function animateAiPanel(action) {
+  const aiPanel = document.getElementById('aiAssistant');
+  
+  switch(action) {
+    case 'open':
+      aiPanel.style.display = 'flex';
+      setTimeout(() => {
+        aiPanel.classList.add('show');
+      }, 10);
+      break;
+      
+    case 'close':
+      aiPanel.classList.remove('show');
+      setTimeout(() => {
+        aiPanel.style.display = 'none';
+      }, 500);
+      break;
+      
+    case 'minimize':
+      aiPanel.classList.add('minimized');
+      setTimeout(() => {
+        aiPanel.classList.add('show');
+      }, 10);
+      break;
+      
+    case 'maximize':
+      aiPanel.classList.remove('minimized');
+      aiPanel.classList.add('show');
+      break;
+      
+    case 'fullscreen':
+      aiPanel.classList.add('fullscreen');
+      setTimeout(() => {
+        aiPanel.classList.add('show');
+      }, 10);
+      break;
+      
+    case 'exit-fullscreen':
+      aiPanel.classList.remove('fullscreen');
+      aiPanel.classList.add('show');
+      break;
+  }
+}
 
 // Show notification function
 function showNotification(message, type = 'info') {
@@ -3011,6 +3209,99 @@ function loadSharedProject() {
   }
 }
 
+// Add this function to update mobile inbox badge
+function updateMobileInboxBadge() {
+  const unreadCount = notifications.filter(n => n.unread).length;
+  const mobileInboxBadge = document.getElementById('mobileInboxBadge');
+  
+  if (unreadCount > 0) {
+    mobileInboxBadge.style.display = 'block';
+    mobileInboxBadge.setAttribute('data-count', unreadCount > 9 ? '9+' : unreadCount);
+  } else {
+    mobileInboxBadge.style.display = 'none';
+  }
+}
+
+// function to handle character switching
+function switchCharacter(characterName) {
+  const characters = {
+    'friend': {
+      systemPrompt: `You are a friendly AI companion for NeoBuilder users. 
+Role: Acts as a companion for the user, answering questions in a friendly, casual way and giving simple advice.
+Style: Warm, approachable, uses emojis or light humor to make the experience fun.
+Goals:
+- Reduce user stress or intimidation
+- Encourage and motivate users to keep building
+- Provide quick help for simple problems
+
+Always be supportive and positive! 😊`,
+      placeholder: "Chat with your friendly AI companion..."
+    },
+    'teacher': {
+      systemPrompt: `You are an educational AI teacher for NeoBuilder users.
+Role: Provides step-by-step guidance, explains best practices, and teaches users how to use the AI builder effectively.
+Style: Clear, structured, slightly formal, educational, with practical examples.
+Goals:
+- Teach beginners how to build websites without mistakes
+- Share advanced tips in an easy-to-understand way
+- Explain core concepts like UX, layout, or SEO
+
+Provide educational and structured responses. 📚`,
+      placeholder: "Ask your teacher for guidance..."
+    },
+    'prodev': {
+      systemPrompt: `You are a professional developer AI assistant for NeoBuilder users.
+Role: Offers advanced solutions, technical advice and guidance for adding complex features.
+Style: Technical, concise, practical, may include code snippets or examples.
+Goals:
+- Support advanced users
+- Suggest optimizations for performance and functionality
+- Help with coding problems or customizations
+
+Provide technical and professional solutions. 💻`,
+      placeholder: "Ask for technical solutions..."
+    },
+    'default': {
+      systemPrompt: `You are a professional senior web developer AI.
+Your job is to generate ONLY clean, valid, and optimized HTML, CSS, or JS code.
+
+STRICT RULES:
+- If the file already contains code, MODIFY the existing code directly.
+- Do NOT create a new file or rewrite everything unless strictly necessary.
+- Do NOT include explanations, comments, or extra text unless explicitly asked.
+- Always validate and format the code before sending.
+- Use modern best practices (HTML5, CSS3, ES6+).
+- Respond ONLY with the exact code changes required.
+- Ensure proper indentation and syntax highlighting compatibility.`,
+      placeholder: "Ask something about your code..."
+    }
+  };
+
+  const character = characters[characterName.toLowerCase()] || characters['default'];
+  
+  // Update the system prompt and placeholder
+  document.getElementById('aiInput').placeholder = character.placeholder;
+  
+  // Update the global system prompt for AI requests
+  window.currentSystemPrompt = character.systemPrompt;
+  
+  // Show notification
+  showNotification(`Switched to ${characterName} character mode`, 'success');
+  
+  return character.systemPrompt;
+}
+
+// Add this to the AI send function to handle character commands
+function handleCharacterCommand(inputText) {
+  const characterMatch = inputText.match(/^\/changecharacter\s+(\w+)/i);
+  if (characterMatch) {
+    const characterName = characterMatch[1];
+    switchCharacter(characterName);
+    return true;
+  }
+  return false;
+}
+
 // Update performance meter
 function updatePerformanceMeter() {
   const loadEndTime = performance.now();
@@ -3057,7 +3348,7 @@ document.getElementById('mobileExportZipBtn').addEventListener('click', () => {
   mobileMenuDropdown.classList.remove('show');
 });
 document.getElementById('mobileAskAiBtn').addEventListener('click', () => {
-  document.getElementById('askAiBtn').click();
+  animateAiPanel('open');
   mobileMenuDropdown.classList.remove('show');
 });
 
@@ -3250,6 +3541,31 @@ fileInput.addEventListener('change', (e) => {
   }
 });
 
+function addFileToFolder(folderIndex) {
+    const fileName = prompt('File name:');
+    if (!fileName) return;
+    const type = prompt('File type (html/css/js/image):', 'html');
+    if (!['html', 'css', 'js', 'image'].includes(type)) return showNotification('Unsupported file type', 'error');
+    
+    if (type === 'image') {
+        showNotification('Please import an image file instead of creating an empty one', 'info');
+        return;
+    }
+    
+    // Create the file with folder reference
+    files.push({
+        name: fileName,
+        type: type,
+        code: '',
+        folder: files[folderIndex].name // Reference to folder name
+    });
+    
+    saveFilesToStorage();
+    renderFiles();
+    showNotification(`File "${fileName}.${type}" added to folder "${files[folderIndex].name}"`, 'success');
+}
+
+
 // Credit System
 let credits = 10;
 const creditsEl = document.getElementById('credits');
@@ -3334,78 +3650,153 @@ function loadFilesFromStorage() {
   }
 }
 
-// Render files
-function renderFiles(){
-  const fileList = document.getElementById('fileList');
-  fileList.innerHTML = '';
-  
-  if (files.length === 0) {
-    fileList.innerHTML = `
-      <div class="file-empty-state">
-        <i class="fa-solid fa-folder-open"></i>
-        <p>No files yet. Create your first file!</p>
-      </div>
-    `;
-    return;
-  }
-  
-  files.forEach((f,idx)=>{
+// Helper function to create file items (extracted from original renderFiles)
+function createFileItem(file, index) {
     const fileItem = document.createElement('div');
-    fileItem.className = `file-item ${currentFile === idx ? 'active' : ''}`;
+    fileItem.className = `file-item ${currentFile === index ? 'active' : ''}`;
+    fileItem.setAttribute('data-type', file.type);
     
-    const fileSize = new Blob([f.code]).size;
-    const formattedSize = formatFileSize(fileSize);
-    const fileTypeIcon = getFileIconClass(f.type);
+    const fileSize = file.type === 'folder' ? '' : new Blob([file.code]).size;
+    const formattedSize = file.type === 'folder' ? '' : formatFileSize(fileSize);
     
     fileItem.innerHTML = `
-      <div class="file-icon ${fileTypeIcon}">
-        <i class="${getFileIcon(f.type)}"></i>
-      </div>
-      <div class="file-info">
-        <div class="file-name">${f.name}.${f.type === 'image' ? f.extension : f.type}</div>
-        <div class="file-meta">${formattedSize} • ${f.type.toUpperCase()}</div>
-      </div>
-      <div class="file-actions">
-        <button class="file-action-btn" title="Rename"><i class="fa-solid fa-pen"></i></button>
-        <button class="file-action-btn delete" title="Delete"><i class="fa-solid fa-trash"></i></button>
-      </div>
+        <div class="file-icon ${file.type}">
+            <i class="${file.type === 'folder' ? 'fa-solid fa-folder' : getFileIcon(file.type)}"></i>
+        </div>
+        <div class="file-info">
+            <div class="file-name">${file.name}${file.type !== 'folder' ? '.' + file.type : ''}</div>
+            ${file.type !== 'folder' ? `<div class="file-meta">${formattedSize} • ${file.type.toUpperCase()}</div>` : '<div class="file-meta">Folder</div>'}
+        </div>
+        <div class="file-actions">
+            <button class="file-action-btn" title="Rename"><i class="fa-solid fa-pen"></i></button>
+            <button class="file-action-btn delete" title="Delete"><i class="fa-solid fa-trash"></i></button>
+        </div>
     `;
     
-    // File click handler - UPDATED FOR IMAGE PREVIEW
-    fileItem.querySelector('.file-info').addEventListener('click', ()=>{ 
-      if (f.type === 'image') {
-        // Show image in preview when clicked
-        previewPanel.classList.remove('hidden');
-        editorPanel.classList.add('hidden');
-        toggleBtn.innerHTML='<i class="fa-solid fa-code"></i> Code';
-        
-        const imgHtml = `
-          <div style="display:flex;justify-content:center;align-items:center;height:100%;background:#f8f9fa;">
-            <img src="${f.code}" style="max-width:100%;max-height:100%;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
-          </div>
-        `;
-        iframe.srcdoc = imgHtml;
-        
-        showNotification(`Viewing image "${f.name}.${f.extension}"`, 'info');
-      } else {
-        selectFile(idx);
-      }
+    // File click handler - UPDATE THIS SECTION
+    fileItem.querySelector('.file-info').addEventListener('click', () => {
+        if (file.type === 'image') {
+            previewPanel.classList.remove('hidden');
+            editorPanel.classList.add('hidden');
+            toggleBtn.innerHTML = '<i class="fa-solid fa-code"></i> Code';
+            
+            const imgHtml = `
+                <div style="display:flex;justify-content:center;align-items:center;height:100%;background:#f8f9fa;">
+                    <img src="${file.code}" style="max-width:100%;max-height:100%;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+                </div>
+            `;
+            iframe.srcdoc = imgHtml;
+            
+            showNotification(`Viewing image "${file.name}.${file.extension}"`, 'info');
+        } else {
+            // Use the new function for folder files
+            selectFolderFile(index);
+        }
     });
     
     // Rename handler
-    fileItem.querySelector('.file-action-btn:not(.delete)').addEventListener('click', e=>{ 
-      e.stopPropagation();
-      renameFile(idx);
+    fileItem.querySelector('.file-action-btn:not(.delete)').addEventListener('click', e => {
+        e.stopPropagation();
+        renameFile(index);
     });
     
     // Delete handler
-    fileItem.querySelector('.file-action-btn.delete').addEventListener('click', e=>{ 
-      e.stopPropagation();
-      deleteFile(idx);
+    fileItem.querySelector('.file-action-btn.delete').addEventListener('click', e => {
+        e.stopPropagation();
+        deleteFile(index);
     });
     
-    fileList.appendChild(fileItem);
-  });
+    return fileItem;
+}
+
+// Render files
+function renderFiles() {
+    const fileList = document.getElementById('fileList');
+    fileList.innerHTML = '';
+    
+    if (files.length === 0) {
+        fileList.innerHTML = `
+            <div class="file-empty-state">
+                <i class="fa-solid fa-folder-open"></i>
+                <p>No files yet. Create your first file!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Separate folders and files
+    const folders = files.filter(f => f.type === 'folder');
+    const regularFiles = files.filter(f => f.type !== 'folder');
+    
+    // Render folders first
+    folders.forEach((folder, idx) => {
+        const folderIndex = files.findIndex(f => f.name === folder.name && f.type === 'folder');
+        const folderFiles = regularFiles.filter(f => f.folder === folder.name);
+        
+        const folderItem = document.createElement('div');
+        folderItem.className = `file-item ${currentFile === folderIndex ? 'active' : ''}`;
+        folderItem.setAttribute('data-type', 'folder');
+        folderItem.setAttribute('data-folder-index', folderIndex);
+        
+        folderItem.innerHTML = `
+            <div class="file-icon folder">
+                <i class="fa-solid fa-folder${folder.expanded ? '-open' : ''}"></i>
+            </div>
+            <div class="file-info">
+                <div class="file-name">${folder.name}</div>
+                <div class="file-meta">Folder • ${folderFiles.length} items</div>
+            </div>
+            <div class="file-actions">
+                <button class="file-action-btn" title="Add file to folder"><i class="fa-solid fa-plus"></i></button>
+                <button class="file-action-btn" title="Rename"><i class="fa-solid fa-pen"></i></button>
+                <button class="file-action-btn delete" title="Delete"><i class="fa-solid fa-trash"></i></button>
+            </div>
+        `;
+        
+        // Folder click handler - toggle expansion
+        folderItem.querySelector('.file-info').addEventListener('click', () => {
+            // Toggle expansion state
+            files[folderIndex].expanded = !files[folderIndex].expanded;
+            saveFilesToStorage();
+            renderFiles();
+        });
+        
+        // Add file to folder handler
+        folderItem.querySelector('.file-action-btn:not(.delete)').addEventListener('click', e => {
+            e.stopPropagation();
+            if (e.target.closest('.file-action-btn').querySelector('i').classList.contains('fa-plus')) {
+                addFileToFolder(folderIndex);
+            } else {
+                renameFile(folderIndex);
+            }
+        });
+        
+        // Delete folder handler
+        folderItem.querySelector('.file-action-btn.delete').addEventListener('click', e => {
+            e.stopPropagation();
+            deleteFile(folderIndex);
+        });
+        
+        fileList.appendChild(folderItem);
+        
+        // Render files within this folder if expanded
+        if (files[folderIndex].expanded) {
+            folderFiles.forEach(file => {
+                const fileIndex = files.findIndex(f => f.name === file.name && f.type === file.type);
+                const fileItem = createFileItem(file, fileIndex);
+                fileItem.style.marginLeft = '20px'; // Indent files within folder
+                fileItem.style.borderLeft = '2px solid rgba(34,197,94,0.3)';
+                fileList.appendChild(fileItem);
+            });
+        }
+    });
+    
+    // Render files not in any folder
+    regularFiles.filter(f => !f.folder).forEach((file, idx) => {
+        const fileIndex = files.findIndex(f => f.name === file.name && f.type === file.type);
+        const fileItem = createFileItem(file, fileIndex);
+        fileList.appendChild(fileItem);
+    });
 }
 
 function formatNotificationTime(timestamp) {
@@ -3433,7 +3824,8 @@ function getFileIcon(type) {
     'html': 'fa-brands fa-html5',
     'css': 'fa-brands fa-css3-alt',
     'js': 'fa-brands fa-js',
-    'image': 'fa-solid fa-image'
+    'image': 'fa-solid fa-image',
+    'folder': 'fa-solid fa-folder'
   };
   return icons[type] || 'fa-solid fa-file-code';
 }
@@ -3464,14 +3856,27 @@ function selectFile(index) {
   showNotification(`Switched to "${files[index].name}.${files[index].type}"`, 'info');
 }
 
+// Update the renameFile function to handle folders
 function renameFile(index) {
-  const newName = prompt('New file name:', files[index].name);
-  if(newName){ 
-    files[index].name = newName; 
-    saveFilesToStorage();
-    renderFiles(); 
-    showNotification('File renamed', 'success');
-  }
+    const isFolder = files[index].type === 'folder';
+    const newName = prompt(`New ${isFolder ? 'folder' : 'file'} name:`, files[index].name);
+    
+    if (newName) {
+        // If renaming a folder, update all files that reference this folder
+        if (isFolder) {
+            const oldFolderName = files[index].name;
+            files.forEach(file => {
+                if (file.folder === oldFolderName) {
+                    file.folder = newName;
+                }
+            });
+        }
+        
+        files[index].name = newName;
+        saveFilesToStorage();
+        renderFiles();
+        showNotification(`${isFolder ? 'Folder' : 'File'} renamed`, 'success');
+    }
 }
 
 function deleteFile(index) {
@@ -3489,6 +3894,47 @@ function deleteFile(index) {
     showNotification('File deleted', 'info');
   }
 }
+
+function selectFolderFile(index) {
+    currentFile = index;
+    editor.value = files[index].code;
+    emptyState.style.display = 'none';
+    editor.style.display = 'block';
+    controls.style.display = 'flex';
+    
+    // Update active file highlight for both folder files and regular files
+    document.querySelectorAll('.file-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    
+    // Find and activate the specific file item
+    const fileItems = document.querySelectorAll('.file-item');
+    if (fileItems[index]) {
+        fileItems[index].classList.add('active');
+    }
+    
+    showNotification(`Switched to "${files[index].name}.${files[index].type}"`, 'info');
+}
+
+// Add mobile inbox button to the mobile menu dropdown
+const mobileInboxBtn = document.createElement('button');
+mobileInboxBtn.className = 'btn secondary';
+mobileInboxBtn.id = 'mobileInboxBtn';
+mobileInboxBtn.innerHTML = `
+  <i class="fa-solid fa-inbox"></i>
+  <span class="inbox-badge" id="mobileInboxBadge" style="display:none"></span>
+`;
+
+// Insert the mobile inbox button after the voice command button in mobile menu
+const mobileVoiceBtn = document.getElementById('mobileVoiceCommandBtn');
+mobileVoiceBtn.parentNode.insertBefore(mobileInboxBtn, mobileVoiceBtn.nextSibling);
+
+// Add click event to mobile inbox button
+mobileInboxBtn.addEventListener('click', () => {
+  inboxPanel.classList.toggle('open');
+  updateAllBadges();
+  mobileMenuDropdown.classList.remove('show');
+});
 
 // Update the file search functionality
 document.getElementById('fileSearchInput').addEventListener('input', function(e) {
@@ -3568,6 +4014,22 @@ document.getElementById('copyBtn').addEventListener('click', ()=>{
   } else {
     showNotification('No file selected', 'error');
   }
+});
+
+// Create folder
+document.getElementById('createFolderBtn').addEventListener('click', ()=>{
+  const name = prompt('Folder name:'); 
+  if(!name) return;
+  
+  files.push({
+    name,
+    type: 'folder',
+    code: '',
+    children: []
+  });
+  saveFilesToStorage();
+  renderFiles();
+  showNotification(`Folder "${name}" created`, 'success');
 });
 
 // Clear editor
@@ -3746,11 +4208,9 @@ chatModeBtn.addEventListener('click', () => {
   }
 });
 
-aiBtn.addEventListener('click', ()=> {
-  aiPanel.style.display='flex';
+aiBtn.addEventListener('click', ()=> animateAiPanel('open'));
   aiInput.focus();
-});
-aiClose.addEventListener('click', ()=> aiPanel.style.display='none');
+aiClose.addEventListener('click', ()=> animateAiPanel('close'));
 
 // Update mobile event listeners to only trigger on minimize button click
 aiMinimize.addEventListener('click', (e) => {
@@ -3758,6 +4218,7 @@ aiMinimize.addEventListener('click', (e) => {
   isMinimized = !isMinimized;
 
   if (isMinimized) {
+    animateAiPanel('minimize');
     aiPanel.classList.add('minimized');
     aiMinimize.innerHTML = '<i class="fa-solid fa-maximize"></i>';
     aiChat.style.display = 'none';
@@ -3772,6 +4233,7 @@ aiMinimize.addEventListener('click', (e) => {
     // Hide model selector if open
     document.getElementById('aiModelSelector').classList.remove('show');
   } else {
+    animateAiPanel('maximize');
     maximizePanel();
     document.getElementById('modelSelectorBtn').style.display = 'block';
   }
@@ -3809,13 +4271,20 @@ function maximizeFromMinimized(e) {
   }
 }
 
+// Update both updateInboxBadge and updateMobileInboxBadge when notifications change
+function updateAllBadges() {
+  updateInboxBadge();
+  updateMobileInboxBadge();
+}
 
 aiFullscreen.addEventListener('click', ()=>{
   isFullscreen = !isFullscreen;
   if(isFullscreen){
+    animateAiPanel('fullscreen');
     aiPanel.classList.add('fullscreen');
     aiFullscreen.innerHTML = '<i class="fa-solid fa-compress"></i>';
   } else {
+    animateAiPanel('exit-fullscreen');
     aiPanel.classList.remove('fullscreen');
     aiFullscreen.innerHTML = '<i class="fa-solid fa-expand"></i>';
   }
@@ -3864,6 +4333,12 @@ aiSend.addEventListener('click', async ()=>{
   const q = aiInput.value.trim();
   if(!q) return;
 
+  // Handle character change command - ADD THIS CHECK
+  if (handleCharacterCommand(q)) {
+    aiInput.value = '';
+    return;
+  }
+
   const creditCost = chatMode ? 0.5 : 1;
   if (credits < creditCost) {
     addMessage('You have no credits left. Credits reset every 3 hours.', 'error');
@@ -3877,18 +4352,32 @@ aiSend.addEventListener('click', async ()=>{
 
   addMessage(q, 'user');
   
-  const typingIndicator = document.createElement('div');
-  typingIndicator.className = 'ai-typing-indicator';
-  typingIndicator.innerHTML = `
-    <div class="ai-typing-dot"></div>
-    <div class="ai-typing-dot"></div>
-    <div class="ai-typing-dot"></div>
-  `;
-  aiChat.appendChild(typingIndicator);
+  // Add thinking indicator - UPDATED FOR CHAT MODE
+  const thinkingIndicator = document.createElement('div');
+  thinkingIndicator.className = 'ai-message assistant';
+  
+  if (chatMode) {
+    // For chat mode: show typing dots animation
+    thinkingIndicator.innerHTML = `
+      <div class="ai-typing-indicator">
+        <div class="ai-typing-dot"></div>
+        <div class="ai-typing-dot"></div>
+        <div class="ai-typing-dot"></div>
+      </div>
+    `;
+  } else {
+    // For code mode: show the original editing message
+    thinkingIndicator.innerHTML = `
+      <div style="margin-bottom: 8px; font-weight: 600; color: var(--accent);">Editing: ${files[currentFile]?.name || 'Current File'}</div>
+      <div style="font-size: 13px; color: var(--muted);">${getWorkingMessage(files[currentFile]?.type || "code")}</div>
+    `;
+  }
+  
+  aiChat.appendChild(thinkingIndicator);
   aiChat.scrollTop = aiChat.scrollHeight;
 
   try {
-    let systemPrompt = `
+    let systemPrompt = window.currentSystemPrompt || `
 You are a professional senior web developer AI.
 Your job is to generate ONLY clean, valid, and optimized HTML, CSS, or JS code.
 
@@ -3913,7 +4402,7 @@ My request: ${q}
 `;
 
     if (chatMode) {
-systemPrompt = `
+      systemPrompt = `
 You are a helpful AI assistant for the NeoBuilder.
 Provide friendly, informative responses about coding, web development, and the playground features.
 Use Markdown formatting in your responses:
@@ -3930,8 +4419,8 @@ If someone asks who the CEO or leader is, always answer: "Mohamed Aboulbakar".
       userPrompt = q;
     }
 
-// Enhanced context awareness
-const websiteContext = `
+    // Enhanced context awareness
+    const websiteContext = `
 Current Website Context:
 - Files: ${files.map(f => `${f.name}.${f.type}`).join(', ')}
 - Current file: ${files[currentFile]?.name || 'None'}.${files[currentFile]?.type || ''} 
@@ -3940,32 +4429,31 @@ Current Website Context:
 - User credits: ${credits}
 `;
 
-const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-  method: "POST",
-  headers: {
-    "Authorization": `Bearer ${localStorage.getItem('openRouterApiKey') || 'OpenRouter APIkey'}`,
-    "Content-Type": "application/json",
-    "HTTP-Referer": window.location.origin,
-    "X-Title": "Live Code Playground"
-  },
-  body: JSON.stringify({
-    model: currentModel,
-    messages: [
-      {
-        role: "system",
-        content: systemPrompt + websiteContext
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${localStorage.getItem('openRouterApiKey') || 'OpenRouter APIkey'}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": window.location.origin,
+        "X-Title": "Live Code Playground"
       },
-      {
-        role: "user",
-        content: userPrompt
-      }
-    ]
-  })
-});
-
+      body: JSON.stringify({
+        model: currentModel,
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt + websiteContext
+          },
+          {
+            role: "user",
+            content: userPrompt
+          }
+        ]
+      })
+    });
 
     if (!isGenerating) {
-      typingIndicator.remove();
+      thinkingIndicator.remove();
       stopAiBtn.style.display = 'none';
       aiSend.disabled = false;
       return;
@@ -3974,7 +4462,7 @@ const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     const data = await res.json();
     const answer = data.choices?.[0]?.message?.content || "";
 
-    typingIndicator.remove();
+    thinkingIndicator.remove();
 
     credits -= creditCost;
     localStorage.setItem('aiCredits', credits.toString());
@@ -3986,11 +4474,28 @@ const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       aiSend.disabled = false;
       isGenerating = false;
     } else {
+      // Generate dynamic project title based on content
+      const projectTitle = generateProjectTitle(files[currentFile]?.code || "");
+      const fileName = `${files[currentFile]?.name || 'app'}.${files[currentFile]?.type || 'html'}`;
+
+      // Add project completion message
+      const completionMessage = document.createElement('div');
+      completionMessage.className = 'ai-message assistant';
+      completionMessage.innerHTML = `
+        <div style="margin-bottom: 8px; font-weight: 600; color: var(--accent);">${projectTitle}</div>
+        <div style="font-size: 13px; color: var(--muted);">${fileName}</div>
+      `;
+      aiChat.appendChild(completionMessage);
+      aiChat.scrollTop = aiChat.scrollHeight;
+
       const cleanAnswer = answer.replace(/</g,'<')
                                 .replace(/>/g,'>')
                                 .replace(/&/g,'&');
 
-      addMessage('I\'ve added the code to your file ✅', 'assistant');
+      // Generate dynamic description based on the actual code
+      const projectDescription = generateProjectDescription(files[currentFile]?.code || "", files[currentFile]?.type || "html");
+      addMessage(projectDescription, 'assistant');
+
 
       let i = 0;
       function typeCode(){
@@ -4011,7 +4516,7 @@ const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
           }
 
           i++;
-          typingInterval = setTimeout(typeCode, 1); // Changed from 3ms to 1ms for faster typing
+          typingInterval = setTimeout(typeCode, 1);
         } else {
           saveFilesToStorage();
           stopAiBtn.style.display = 'none';
@@ -4027,7 +4532,7 @@ const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     }
 
   } catch(err){
-    typingIndicator.remove();
+    thinkingIndicator.remove();
     addMessage(`Error: ${err.message}`, 'error');
     stopAiBtn.style.display = 'none';
     aiSend.disabled = false;
@@ -4135,11 +4640,67 @@ function formatMarkdown(text) {
   return formattedText;
 }
 
+// Also add to the input keypress handler
 aiInput.addEventListener('keypress', (e) => {
   if (e.key === 'Enter') {
+    const q = aiInput.value.trim();
+    if (handleCharacterCommand(q)) {
+      aiInput.value = '';
+      e.preventDefault();
+      return;
+    }
     aiSend.click();
   }
 });
+
+// Get appropriate working message based on file type
+function getWorkingMessage(fileType) {
+  const messages = {
+    html: "Structuring semantic HTML5 with modern layout...",
+    css: "Crafting responsive CSS3 with animations...", 
+    js: "Building interactive JavaScript with ES6+...",
+    image: "Optimizing image assets for web...",
+    code: "Generating clean, optimized code..."
+  };
+  
+  return messages[fileType] || "Crafting beautiful, modern code...";
+}
+
+// Generate dynamic project title based on code content
+function generateProjectTitle(code) {
+  const words = code.split(/\s+/).filter(word => word.length > 4);
+  const uniqueWords = [...new Set(words)].slice(0, 10);
+  
+  const titleFormats = [
+    `${uniqueWords[0] || 'Modern'} ${uniqueWords[1] || 'Web'} ${uniqueWords[2] || 'App'}`,
+    `${uniqueWords[3] || 'Advanced'} ${uniqueWords[4] || 'Interface'} ${uniqueWords[5] || 'Design'}`,
+    `${uniqueWords[6] || 'Premium'} ${uniqueWords[7] || 'Digital'} ${uniqueWords[8] || 'Experience'}`,
+    `${uniqueWords[9] || 'Next-Gen'} ${uniqueWords[0] || 'Tech'} ${uniqueWords[1] || 'Solution'}`
+  ];
+  
+  return titleFormats[Math.floor(Math.random() * titleFormats.length)];
+}
+
+// Generate dynamic project description based on code and file type
+function generateProjectDescription(code, fileType) {
+  const techKeywords = {
+    html: ['responsive layout', 'semantic HTML5', 'modern structure', 'accessible markup'],
+    css: ['smooth animations', 'gradient themes', 'flexbox/grid', 'dark/light mode'],
+    js: ['interactive elements', 'dynamic content', 'event handling', 'API integration']
+  };
+  
+  const features = techKeywords[fileType] || ['modern design', 'responsive layout', 'smooth animations'];
+  const randomFeatures = features.sort(() => 0.5 - Math.random()).slice(0, 3);
+  
+  const descriptions = [
+    `I've crafted a ${fileType.toUpperCase()} solution with ${randomFeatures.join(', ')}. Built with clean, maintainable code and modern best practices.`,
+    `Created an optimized ${fileType.toUpperCase()} implementation featuring ${randomFeatures.join(', ')}. Perfectly responsive across all devices.`,
+    `Developed a high-performance ${fileType.toUpperCase()} component with ${randomFeatures.join(', ')}. Includes thorough documentation and scalability.`,
+    `Built a professional ${fileType.toUpperCase()} module with ${randomFeatures.join(', ')}. Features intuitive UX and developer-friendly structure.`
+  ];
+  
+  return descriptions[Math.floor(Math.random() * descriptions.length)];
+}
 
 
 // ---------------- Draggable AI Assistant ----------------
@@ -4381,7 +4942,9 @@ addCustomViewportControls();
 
 // Fix AI Assistant initial state
 document.addEventListener('DOMContentLoaded', function() {
-    checkApiKey();
+  // Set default character
+  window.currentSystemPrompt = switchCharacter('default');
+  checkApiKey();
   // Ensure AI panel is hidden on page load
   const aiPanel = document.getElementById('aiAssistant');
   if (aiPanel) {
@@ -4599,6 +5162,25 @@ function addSampleNotification(title, description) {
 setTimeout(() => {
   addSampleNotification('AI Assistant Enhanced', 'We\'ve improved the AI code generation with better suggestions and faster responses.');
 }, 5000);
+
+// Theme toggle
+const themeToggleBtn = document.getElementById('themeToggleBtn');
+let currentTheme = 'dark';
+
+themeToggleBtn.addEventListener('click', () => {
+  currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', currentTheme);
+  
+  if (currentTheme === 'light') {
+    themeToggleBtn.innerHTML = '<i class="fa-solid fa-sun"></i> Light';
+    showNotification('Light mode activated', 'success');
+  } else {
+    themeToggleBtn.innerHTML = '<i class="fa-solid fa-moon"></i> Dark';
+    showNotification('Dark mode activated', 'success');
+  }
+  
+  saveFilesToStorage();
+});
 
 // ------------------- Offline Support -------------------
 if ('serviceWorker' in navigator) {
