@@ -5146,6 +5146,36 @@ document.addEventListener('DOMContentLoaded', function() {
   loadNotificationsFromStorage();
   loadNotifications();
   updateInboxBadge();
+
+  // Handle referral links when page loads
+function handleReferrals() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const referrer = urlParams.get('ref');
+  
+  if (referrer && referrer !== currentUser) {
+    // This is a referral! Reward the referrer
+    const referrerLinks = JSON.parse(localStorage.getItem('affiliateLinks') || '{}');
+    
+    if (referrer in referrerLinks) {
+      // Add 10 credits to referrer's account
+      let userCredits = parseFloat(localStorage.getItem('userCredits_' + referrer) || '0');
+      userCredits += 10;
+      localStorage.setItem('userCredits_' + referrer, userCredits.toString());
+      
+      // Also grant API access
+      localStorage.setItem('hasAPIAccess_' + referrer, 'true');
+      
+      showNotification('You earned +10 credits for referring a friend!', 'success');
+      
+      // Remove the ref parameter from URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }
+}
+
+// Run on page load
+window.addEventListener('load', handleReferrals);
+
 // Enhanced responsive behavior
 function handleResponsiveDesign() {
   const isMobile = window.innerWidth <= 900;
@@ -5220,29 +5250,6 @@ window.addEventListener('click', (e) => {
   }
 });
 
-// Handle referral links when page loads
-function handleReferrals() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const referrer = urlParams.get('ref');
-  
-  if (referrer && referrer !== currentUser) {
-    // This is a referral! Reward the referrer
-    const referrerLinks = JSON.parse(localStorage.getItem('affiliateLinks') || '{}');
-    if (referrerLinks[referrer]) {
-      // Add 10 credits to referrer's account
-      const userCredits = parseFloat(localStorage.getItem('userCredits_' + referrer) || '0');
-      localStorage.setItem('userCredits_' + referrer, userCredits + 10);
-      
-      // Also give them API access (for demo, we'll set a flag)
-      localStorage.setItem('hasAPIAccess_' + referrer, 'true');
-      
-      showNotification('You earned +10 credits for referring a friend!', 'success');
-    }
-  }
-}
-
-// Run on page load
-window.addEventListener('load', handleReferrals);
 
 // Enhanced loading animation with progress simulation
 document.addEventListener('DOMContentLoaded', function() {
@@ -5425,6 +5432,23 @@ function addSampleNotification(title, description) {
 setTimeout(() => {
   addSampleNotification('AI Assistant Enhanced', 'We\'ve improved the AI code generation with better suggestions and faster responses.');
 }, 5000);
+
+// Add this to your existing code that handles the affiliate modal
+document.querySelector('.affiliate-link').addEventListener('click', function() {
+  const affiliateLink = document.getElementById('affiliateLink');
+  affiliateLink.select();
+  document.execCommand('copy');
+  showNotification('Link copied! Share it with friends.', 'success');
+});
+
+// When someone signs up via referral
+if (referrer) {
+  // Give API key access (if not already given)
+  if (!localStorage.getItem('hasAPIAccess_' + currentUser)) {
+    localStorage.setItem('openRouterApiKey', 'your-api-key-here'); // Replace with actual API key
+    localStorage.setItem('hasAPIAccess_' + currentUser, 'true');
+  }
+}
 
 // Theme toggle
 const themeToggleBtn = document.getElementById('themeToggleBtn');
