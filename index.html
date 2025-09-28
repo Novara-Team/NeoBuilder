@@ -101,6 +101,20 @@ body{
   text-align: center;
 }
 
+.file-item.dragging {
+    opacity: 0.5;
+    background: rgba(34,197,94,0.2) !important;
+}
+
+.file-item.drag-over {
+    background: rgba(34,197,94,0.15) !important;
+    border: 2px dashed var(--accent) !important;
+}
+
+.file-item.drag-over .file-icon {
+    animation: pulse 1s infinite;
+}
+
 /* Neo loader animation */
 .neo-loader {
   position: relative;
@@ -1076,6 +1090,48 @@ iframe#iframePreview{width:100%;height:100%;border:0; display:block; border-radi
 .inbox-empty p {
   margin: 0;
   font-size: 14px;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px);
+}
+
+.modal-content {
+  background-color: var(--bg);
+  margin: 10% auto;
+  padding: 20px;
+  border-radius: 12px;
+  max-width: 500px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.affiliate-link {
+  display: flex;
+  margin: 20px 0;
+}
+
+#affiliateLink {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px 0 0 4px;
+  background: var(--surface);
+}
+
+.affiliate-info {
+  margin-top: 20px;
+  padding: 15px;
+  background: rgba(34, 197, 94, 0.1);
+  border-radius: 8px;
+  border-left: 4px solid var(--success);
 }
 
 /* Messages */
@@ -2491,6 +2547,11 @@ iframe#iframePreview{width:100%;height:100%;border:0; display:block; border-radi
         <i class="fa-solid fa-inbox"></i>
         <span class="inbox-badge" id="inboxBadge" style="display:none"></span>
       </button>
+      <div class="nav-item">
+        <button id="giftBtn" class="nav-icon-btn" title="Share and Earn">
+          <i class="fa-solid fa-gift"></i>
+        </button>
+      </div>
       <div class="credit-counter" id="creditCounter">
         <i class="fa-solid fa-coins"></i>
         <span id="credits">10</span>/10
@@ -2684,6 +2745,31 @@ iframe#iframePreview{width:100%;height:100%;border:0; display:block; border-radi
       <button class="share-btn close" id="cancelApiKeyBtn" style="background:rgba(255,255,255,0.1);">
         Cancel
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- Add the affiliate modal at the end of the body -->
+<div id="affiliateModal" class="modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <h2>Share NeoBuilder</h2>
+    <p>Share your unique link and earn rewards when others sign up!</p>
+    
+    <div class="affiliate-link">
+      <input type="text" id="affiliateLink" readonly>
+      <button id="copyAffiliateLink" class="btn primary">
+        <i class="fa-solid fa-copy"></i> Copy
+      </button>
+    </div>
+    
+    <div class="affiliate-info">
+      <h3>How it works:</h3>
+      <ul>
+        <li>Share your unique link with friends</li>
+        <li>When they sign up, you get +10 free credits</li>
+        <li>You also get a free API key for AI features</li>
+      </ul>
     </div>
   </div>
 </div>
@@ -3632,6 +3718,85 @@ updateCreditsDisplay();
 checkCreditReset();
 setInterval(checkCreditReset, 60000); // Check every minute
 
+// Add this function to handle file dragging
+function setupFileDragAndDrop() {
+    const fileItems = document.querySelectorAll('.file-item:not([data-type="folder"])');
+    
+    fileItems.forEach(item => {
+        item.setAttribute('draggable', 'true');
+        
+        // CHANGE: Use contextmenu event instead of dragstart for right-click
+        item.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            const fileIndex = Array.from(document.querySelectorAll('.file-item:not([data-type="folder"])')).indexOf(item);
+            e.dataTransfer.setData('text/plain', fileIndex.toString());
+            item.classList.add('dragging');
+            
+            // Prevent drag and drop overlay from showing when moving files internally
+            e.stopPropagation();
+        });
+        
+        item.addEventListener('dragend', () => {
+            item.classList.remove('dragging');
+        });
+    });
+    
+    // Add drag event listeners to folders
+    const folders = document.querySelectorAll('.file-item[data-type="folder"]');
+    
+    folders.forEach(folder => {
+        folder.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            folder.classList.add('drag-over');
+            
+            // Prevent drag and drop overlay from showing
+            e.stopPropagation();
+        });
+        
+        folder.addEventListener('dragleave', () => {
+            folder.classList.remove('drag-over');
+        });
+        
+        folder.addEventListener('drop', (e) => {
+            e.preventDefault();
+            folder.classList.remove('drag-over');
+            
+            const fileIndex = parseInt(e.dataTransfer.getData('text/plain'));
+            const folderIndex = parseInt(folder.getAttribute('data-folder-index'));
+            
+            if (!isNaN(fileIndex) && !isNaN(folderIndex)) {
+                moveFileToFolder(fileIndex, folderIndex);
+            }
+            
+            // Prevent drag and drop overlay from showing
+            e.stopPropagation();
+        });
+    });
+}
+// UPDATE THIS CODE TO REMOVE RIGHT-CLICK RESTRICTION
+document.addEventListener('dragstart', (e) => {
+    // Allow drag for all file items regardless of click button
+    if (e.target.closest('.file-item:not([data-type="folder"])')) {
+        // Allow default drag behavior
+    }
+});
+
+
+// Add this function to move files to folders - ADD THIS FUNCTION
+function moveFileToFolder(fileIndex, folderIndex) {
+    if (fileIndex === null || folderIndex === null) return;
+    
+    const fileName = files[fileIndex].name;
+    const folderName = files[folderIndex].name;
+    
+    // Update the file's folder reference
+    files[fileIndex].folder = folderName;
+    saveFilesToStorage();
+    renderFiles();
+    
+    showNotification(`Moved "${fileName}" to folder "${folderName}"`, 'success');
+}
+
 // Local Storage for Files
 function saveFilesToStorage() {
   localStorage.setItem('codePlaygroundFiles', JSON.stringify(files));
@@ -3797,6 +3962,7 @@ function renderFiles() {
         const fileItem = createFileItem(file, fileIndex);
         fileList.appendChild(fileItem);
     });
+    setTimeout(setupFileDragAndDrop, 100);
 }
 
 function formatNotificationTime(timestamp) {
@@ -3902,15 +4068,41 @@ function selectFolderFile(index) {
     editor.style.display = 'block';
     controls.style.display = 'flex';
     
-    // Update active file highlight for both folder files and regular files
+    // Clear all active highlights first
     document.querySelectorAll('.file-item').forEach(item => {
         item.classList.remove('active');
     });
     
-    // Find and activate the specific file item
-    const fileItems = document.querySelectorAll('.file-item');
-    if (fileItems[index]) {
-        fileItems[index].classList.add('active');
+    // Find the exact file item and activate it
+    const allFileItems = document.querySelectorAll('.file-item');
+    let foundItem = null;
+    
+    allFileItems.forEach(item => {
+        const itemIndex = Array.from(allFileItems).indexOf(item);
+        const fileIndexAttr = item.getAttribute('data-folder-index');
+        
+        if (fileIndexAttr !== null && parseInt(fileIndexAttr) === index) {
+            foundItem = item;
+        }
+        
+        // For regular files, check if they match the current index
+        if (!foundItem && item.getAttribute('data-type') !== 'folder') {
+            const fileName = item.querySelector('.file-name').textContent;
+            const fileType = item.getAttribute('data-type');
+            
+            const fileMatch = files.find(f => 
+                f.name === fileName.replace('.' + fileType, '') && 
+                f.type === fileType
+            );
+            
+            if (fileMatch && files.indexOf(fileMatch) === index) {
+                foundItem = item;
+            }
+        }
+    });
+    
+    if (foundItem) {
+        foundItem.classList.add('active');
     }
     
     showNotification(`Switched to "${files[index].name}.${files[index].type}"`, 'info');
@@ -4498,36 +4690,36 @@ Current Website Context:
 
 
       let i = 0;
-      function typeCode(){
-        if(i < cleanAnswer.length && isGenerating){
-          const prevValue = editor.value;
-          editor.value += cleanAnswer[i];
-          files[currentFile].code += cleanAnswer[i];
-          
+      const speed = 50; // عدد الحروف فكل frame، كل ما زدت الرقم كل ما أسرع
+
+      function typeCode() {
+        if (i < cleanAnswer.length && isGenerating) {
+          const chunk = cleanAnswer.slice(i, i + speed);
+          editor.value += chunk;
+          files[currentFile].code += chunk;
+
           editor.scrollTop = editor.scrollHeight;
 
-          if(cleanAnswer[i] === "\n"){
-            const start = editor.value.lastIndexOf("\n") + 1;
+          // Highlight غير ملي يكون \n فهاد chunk
+          if (chunk.includes("\n")) {
+            const lastNewline = editor.value.lastIndexOf("\n");
+            const start = lastNewline + 1;
             const end = editor.value.length;
-            editor.focus();
             editor.setSelectionRange(start, end);
             document.execCommand('backColor', false, 'rgba(34,197,94,0.3)');
-            setTimeout(()=> editor.setSelectionRange(end, end), 800);
+            setTimeout(() => editor.setSelectionRange(end, end), 300);
           }
 
-          i++;
-          typingInterval = setTimeout(typeCode, 1);
+          i += speed;
+          requestAnimationFrame(typeCode); // أسرع من setTimeout
         } else {
           saveFilesToStorage();
           stopAiBtn.style.display = 'none';
           aiSend.disabled = false;
           isGenerating = false;
-          if (typingInterval) {
-            clearTimeout(typingInterval);
-            typingInterval = null;
-          }
         }
       }
+
       typeCode();
     }
 
@@ -4984,6 +5176,74 @@ function handleResponsiveDesign() {
 
 });
 
+// Initialize affiliate system
+let affiliateLinks = JSON.parse(localStorage.getItem('affiliateLinks') || '{}');
+const currentUser = localStorage.getItem('currentUser') || generateUserId();
+
+// Generate unique user ID if not exists
+function generateUserId() {
+  const id = 'user_' + Math.random().toString(36).substring(2, 10);
+  localStorage.setItem('currentUser', id);
+  return id;
+}
+
+// Check if user has a referral link, if not create one
+if (!affiliateLinks[currentUser]) {
+  affiliateLinks[currentUser] = generateAffiliateLink(currentUser);
+  localStorage.setItem('affiliateLinks', JSON.stringify(affiliateLinks));
+}
+
+// Generate unique affiliate link
+function generateAffiliateLink(userId) {
+  return window.location.origin + '?ref=' + userId;
+}
+
+// Open affiliate modal
+document.getElementById('giftBtn').addEventListener('click', () => {
+  const modal = document.getElementById('affiliateModal');
+  modal.style.display = 'block';
+  
+  // Populate the user's unique link
+  const affiliateLink = document.getElementById('affiliateLink');
+  affiliateLink.value = generateAffiliateLink(currentUser);
+});
+
+// Close modal on close button click
+document.querySelector('.modal .close').addEventListener('click', () => {
+  document.getElementById('affiliateModal').style.display = 'none';
+});
+
+// Close modal when clicking outside
+window.addEventListener('click', (e) => {
+  if (e.target.id === 'affiliateModal') {
+    document.getElementById('affiliateModal').style.display = 'none';
+  }
+});
+
+// Handle referral links when page loads
+function handleReferrals() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const referrer = urlParams.get('ref');
+  
+  if (referrer && referrer !== currentUser) {
+    // This is a referral! Reward the referrer
+    const referrerLinks = JSON.parse(localStorage.getItem('affiliateLinks') || '{}');
+    if (referrerLinks[referrer]) {
+      // Add 10 credits to referrer's account
+      const userCredits = parseFloat(localStorage.getItem('userCredits_' + referrer) || '0');
+      localStorage.setItem('userCredits_' + referrer, userCredits + 10);
+      
+      // Also give them API access (for demo, we'll set a flag)
+      localStorage.setItem('hasAPIAccess_' + referrer, 'true');
+      
+      showNotification('You earned +10 credits for referring a friend!', 'success');
+    }
+  }
+}
+
+// Run on page load
+window.addEventListener('load', handleReferrals);
+
 // Enhanced loading animation with progress simulation
 document.addEventListener('DOMContentLoaded', function() {
   const loadingScreen = document.getElementById('loadingScreen');
@@ -5110,7 +5370,10 @@ function loadNotifications() {
   });
 }
 
-
+// Add the styles to the document
+const styleSheet = document.createElement('style');
+styleSheet.textContent = dragDropStyles;
+document.head.appendChild(styleSheet);
 
 // badge count
 function updateInboxBadge() {
