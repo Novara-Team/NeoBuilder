@@ -240,3 +240,19 @@ if ('serviceWorker' in navigator) {
             });
     });
 }
+
+const inboxList = document.getElementById('inboxList');
+
+// Referral system elements
+const referralBtn = document.getElementById('referralBtn');
+const mobileReferralBtn = document.getElementById('mobileReferralBtn');
+const referralOverlay = document.getElementById('referralOverlay');
+const closePanel = document.getElementById('closePanel');
+const welcomeMessage = document.getElementById('welcomeMessage');
+const closeWelcome = document.getElementById('closeWelcome');
+const referralLink = document.getElementById('referralLink');
+const copyReferralBtn = document.getElementById('copyBtn');
+const totalReferrals = document.getElementById('totalReferrals');
+const earnedCredits = document.getElementById('earnedCredits');
+
+// Voice command elements
