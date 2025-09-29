@@ -182,7 +182,7 @@ main {
 }
 
 .referral-panel {
-    background: white;
+    background: var(--panel);
     border-radius: 20px;
     max-width: 500px;
     width: 90%;
@@ -190,6 +190,7 @@ main {
     overflow-y: auto;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     animation: slideUp 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .panel-header {
@@ -197,8 +198,8 @@ main {
     justify-content: space-between;
     align-items: center;
     padding: 1.5rem 2rem;
-    border-bottom: 1px solid #eee;
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: linear-gradient(135deg, var(--accent), #16a34a);
     color: white;
     border-radius: 20px 20px 0 0;
 }
@@ -208,6 +209,7 @@ main {
     align-items: center;
     gap: 0.5rem;
     font-size: 1.3rem;
+    margin: 0;
 }
 
 .close-btn {
@@ -242,24 +244,24 @@ main {
     align-items: center;
     gap: 1rem;
     padding: 1.5rem;
-    background: linear-gradient(135deg, #f8f9ff, #e8f0ff);
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.05));
     border-radius: 15px;
-    border: 2px solid #e0e8ff;
+    border: 2px solid rgba(34, 197, 94, 0.2);
 }
 
 .reward-item i {
     font-size: 2rem;
-    color: #667eea;
+    color: var(--accent);
 }
 
 .reward-item h4 {
-    color: #333;
+    color: #e8f1fb;
     font-size: 0.9rem;
     margin-bottom: 0.25rem;
 }
 
 .credits {
-    color: #667eea;
+    color: var(--accent);
     font-weight: 700;
     font-size: 1.1rem;
 }
@@ -273,7 +275,7 @@ main {
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 600;
-    color: #333;
+    color: #e8f1fb;
 }
 
 .link-container {
@@ -284,15 +286,15 @@ main {
 #referralLink {
     flex: 1;
     padding: 0.75rem;
-    border: 2px solid #e0e8ff;
+    border: 2px solid rgba(255, 255, 255, 0.1);
     border-radius: 10px;
     font-family: monospace;
-    background: #f8f9ff;
-    color: #333;
+    background: rgba(255, 255, 255, 0.05);
+    color: #e8f1fb;
 }
 
 .copy-btn {
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: linear-gradient(135deg, var(--accent), #16a34a);
     color: white;
     border: none;
     padding: 0.75rem 1rem;
@@ -303,13 +305,13 @@ main {
 
 .copy-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3);
 }
 
 /* Share Buttons */
 .share-buttons h4 {
     margin-bottom: 1rem;
-    color: #333;
+    color: #e8f1fb;
 }
 
 .share-options {
@@ -357,7 +359,7 @@ main {
 /* Referral Stats */
 .referral-stats h4 {
     margin-bottom: 1rem;
-    color: #333;
+    color: #e8f1fb;
 }
 
 .stats-grid {
@@ -369,21 +371,21 @@ main {
 .stat-item {
     text-align: center;
     padding: 1.5rem;
-    background: linear-gradient(135deg, #f8f9ff, #e8f0ff);
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.05));
     border-radius: 15px;
-    border: 2px solid #e0e8ff;
+    border: 2px solid rgba(34, 197, 94, 0.2);
 }
 
 .stat-number {
     display: block;
     font-size: 2rem;
     font-weight: 700;
-    color: #667eea;
+    color: var(--accent);
     margin-bottom: 0.5rem;
 }
 
 .stat-label {
-    color: #666;
+    color: var(--muted);
     font-size: 0.9rem;
 }
 
